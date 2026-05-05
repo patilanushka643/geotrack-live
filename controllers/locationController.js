@@ -107,7 +107,8 @@ async function getUsersList(req, res) {
 
     // Format response with online status
     const formattedUsers = users.map((user) => ({
-      id: user._id,
+      id: user._id.toString(),
+      userId: user._id.toString(),
       fullName: user.fullName,
       username: user.userId,
       email: user.email,
@@ -293,6 +294,128 @@ async function getLocationHistory(req, res) {
   }
 }
 
+/**
+ * Get all active users (currently sharing location)
+ */
+async function getAllActiveLocations(req, res) {
+  try {
+    const currentUserId = req.user.userId;
+
+    // Get all users who are actively sharing location (updated in last 5 minutes)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    
+    const activeUsers = await User.find(
+      {
+        isVerified: true,
+        isLocationSharing: true,
+        locationLastUpdated: { $gte: fiveMinutesAgo },
+        _id: { $ne: currentUserId },
+      },
+      {
+        _id: 1,
+        email: 1,
+        fullName: 1,
+        userId: 1,
+        latitude: 1,
+        longitude: 1,
+        locationLastUpdated: 1,
+        isLocationSharing: 1,
+      }
+    ).sort({ fullName: 1 });
+
+    return res.status(200).json({
+      success: true,
+      message: "Active users retrieved successfully",
+      activeUsers,
+      count: activeUsers.length,
+    });
+  } catch (error) {
+    console.error("Error fetching active locations:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching active locations",
+    });
+  }
+}
+
+/**
+ * Get location sharing status for all users
+ */
+async function getLocationSharingStatus(req, res) {
+  try {
+    const users = await User.find(
+      { isVerified: true },
+      { _id: 1, isLocationSharing: 1 }
+    );
+
+    const statusMap = {};
+    users.forEach(user => {
+      statusMap[user._id.toString()] = user.isLocationSharing;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Sharing status retrieved successfully",
+      status: statusMap,
+    });
+  } catch (error) {
+    console.error("Error fetching sharing status:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching sharing status",
+    });
+  }
+}
+
+/**
+ * Get all registered users (verified users only)
+ */
+async function getAllUsers(req, res) {
+  try {
+    const currentUserId = req.user.userId;
+
+    // Get all verified users except the current user
+    const users = await User.find(
+      {
+        isVerified: true,
+        _id: { $ne: currentUserId },
+      },
+      {
+        _id: 1,
+        email: 1,
+        fullName: 1,
+        userId: 1,
+        latitude: 1,
+        longitude: 1,
+        locationLastUpdated: 1,
+        isLocationSharing: 1,
+      }
+    ).sort({ fullName: 1 });
+
+    // Add online status based on last update
+    const formattedUsers = users.map(user => ({
+      id: user._id.toString(),
+      userId: user._id.toString(),
+      ...user.toObject(),
+      isOnline: user.locationLastUpdated &&
+                (Date.now() - new Date(user.locationLastUpdated).getTime()) < 60000,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      message: "All users retrieved successfully",
+      count: formattedUsers.length,
+      users: formattedUsers,
+    });
+  } catch (error) {
+    console.error("Error fetching all users:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching users",
+    });
+  }
+}
+
 module.exports = {
   updateLocation,
   getUsersList,
@@ -300,4 +423,7 @@ module.exports = {
   toggleLocationSharing,
   getMyLocation,
   getLocationHistory,
+  getAllActiveLocations,
+  getLocationSharingStatus,
+  getAllUsers,
 };
