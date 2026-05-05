@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoTrack | Verify & Join</title>
+    <style>
+        :root {
+            --blue: #3b82f6;
+            --dark: #0f172a;
+            --white: #ffffff;
+            --gray: #94a3b8;
+            --green: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+
+        body {
+            background-color: var(--dark);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* SYNTHETIC BACKGROUND */
+        .bg-grid {
+            position: absolute;
+            width: 200%; height: 200%;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            top: -50%;
+            animation: move 20s linear infinite;
+            z-index: -1;
+        }
+        @keyframes move { from { background-position: 0 0; } to { background-position: 0 1000px; } }
+
+        /* CARD STYLE */
+        .page {
+            display: none;
+            width: 90%;
+            max-width: 420px;
+            padding: 30px;
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        /* DASHBOARD & SETTINGS FULL-SCREEN PAGES */
+        .page.fullscreen {
+            display: none !important;
+            max-width: 100%;
+            width: 100%;
+            height: 100vh;
+            padding: 0;
+            border-radius: 0;
+            text-align: left;
+            align-items: stretch;
+        }
+
+        .page.fullscreen.active {
+            display: flex !important;
+        }
+
+        .active { display: block; animation: appear 0.4s ease; }
+        .page.fullscreen.active { display: flex !important; }
+        @keyframes appear { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        h1 { font-size: 24px; margin-bottom: 10px; }
+        p { color: var(--gray); margin-bottom: 20px; font-size: 14px; }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: white;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--blue); }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: 0.2s;
+        }
+
+        .btn-blue { background: var(--blue); color: white; }
+        .btn-green { background: var(--green); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--blue); color: var(--blue); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3); }
+
+        .hidden { display: none; }
+        
+        .step-indicator {
+            font-size: 12px;
+            color: var(--blue);
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        /* ===== DASHBOARD STYLES ===== */
+        .dashboard-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            background: var(--dark);
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(30, 41, 59, 0.95);
+            border-right: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .sidebar-header h2 {
+            font-size: 18px;
+            color: var(--white);
+        }
+
+        .friends-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .friend-item {
+            padding: 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--gray);
+            font-size: 14px;
+        }
+
+        .friend-item:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.4);
+            color: var(--white);
+        }
+
+        .friend-avatar {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, var(--blue), var(--green));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .sidebar-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .sidebar-btn {
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: transparent;
+            color: var(--gray);
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+            text-align: left;
+        }
+
+        .sidebar-btn:hover {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--white);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .dashboard-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+            background: rgba(30, 41, 59, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard-header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--blue);
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+
+        .header-btn:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+
+        .map-area {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(16, 185, 129, 0.1));
+            border: 2px dashed rgba(59, 130, 246, 0.3);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .map-placeholder::before {
+            content: '';
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.3), transparent);
+            border-radius: 50%;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.5; }
+        }
+
+        .map-placeholder-text {
+            text-align: center;
+            z-index: 1;
+        }
+
+        .map-placeholder-text h2 {
+            font-size: 24px;
+            color: var(--white);
+            margin-bottom: 10px;
+        }
+
+        .map-placeholder-text p {
+            color: var(--gray);
+            margin: 0;
+        }
+
+        /* ===== SETTINGS STYLES ===== */
+        .settings-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--dark);
+            overflow-y: auto;
+        }
+
+        .settings-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+            background: rgba(30, 41, 59, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .settings-content {
+            flex: 1;
+            padding: 30px;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .settings-group {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 15px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .settings-group h3 {
+            font-size: 16px;
+            color: var(--white);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-group p {
+            font-size: 13px;
+            color: var(--gray);
+            margin-bottom: 15px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-size: 14px;
+            color: var(--white);
+        }
+
+        .toggle-switch {
+            width: 50px;
+            height: 26px;
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 13px;
+            cursor: pointer;
+            position: relative;
+            transition: 0.3s;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .toggle-switch.active {
+            background: var(--green);
+            border-color: var(--green);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: var(--white);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            left: 26px;
+        }
+
+        /* ===== MOBILE RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .page {
+                width: 95%;
+                padding: 25px;
+                max-width: 100%;
+            }
+
+            .dashboard-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 15px;
+            }
+
+            .sidebar-header {
+                width: 100%;
+                flex-basis: 100%;
+            }
+
+            .friends-list {
+                flex-direction: row;
+                flex-wrap: wrap;
+                width: 100%;
+                gap: 10px;
+                flex-basis: 100%;
+            }
+
+            .friend-item {
+                flex: 1;
+                min-width: 120px;
+                justify-content: center;
+                gap: 5px;
+                flex-direction: column;
+            }
+
+            .sidebar-footer {
+                flex-direction: row;
+                width: 100%;
+                flex-basis: 100%;
+            }
+
+            .sidebar-btn {
+                flex: 1;
+                padding: 8px;
+                font-size: 12px;
+            }
+
+            .dashboard-header {
+                padding: 15px;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .dashboard-header h1 {
+                font-size: 22px;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .map-area {
+                padding: 15px;
+            }
+
+            .settings-content {
+                padding: 15px;
+            }
+
+            .settings-group {
+                padding: 15px;
+            }
+
+            body {
+                display: flex;
+                justify-content: flex-start;
+                align-items: flex-start;
+            }
+
+            .page:not(.fullscreen) {
+                margin-top: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 20px; }
+            
+            .page {
+                padding: 20px;
+            }
+
+            .friend-item {
+                min-width: 100px;
+                font-size: 12px;
+            }
+
+            .settings-group {
+                padding: 12px;
+            }
+
+            .settings-group h3 {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+
+    <!-- LANDING PAGE -->
+    <div id="landing" class="page active">
+        <h1>Location Tracker</h1>
+        <p>Simple, real-time tracking for everyone.</p>
+        <button class="btn btn-blue" onclick="show('signin')">Login</button>
+        <button class="btn btn-outline" onclick="show('signup')">Create Account</button>
+    </div>
+
+    <!-- SIGNIN PAGE -->
+    <div id="signin" class="page">
+        <h1>Welcome Back</h1>
+        <input type="text" placeholder="User ID">
+        <input type="password" placeholder="Password">
+        <button class="btn btn-blue" onclick="show('dashboard')">Enter Map</button>
+        <span style="color:var(--gray); cursor:pointer; font-size:13px;" onclick="show('forgot')">Forgot Password?</span>
+        <button class="btn" style="background:none; color:white; margin-top:10px;" onclick="show('landing')">← Back</button>
+    </div>
+
+    <!-- SIGNUP PAGE - EMAIL ENTRY -->
+    <div id="signup" class="page">
+        <h1>Create Account</h1>
+        <p>Enter your email to get started</p>
+        
+        <input type="email" id="signup-email" placeholder="Enter your email" onkeypress="if(event.key==='Enter') sendOTPSignup()">
+        
+        <div id="signup-error" style="color: #ef4444; font-size: 13px; margin-bottom: 10px; display: none;"></div>
+        <div id="signup-success" style="color: #10b981; font-size: 13px; margin-bottom: 10px; display: none;"></div>
+        
+        <button class="btn btn-blue" id="signup-btn" onclick="sendOTPSignup()">
+            <span id="signup-btn-text">Send OTP</span>
+            <span id="signup-loading" style="display: none;">⏳ Sending...</span>
+        </button>
+        
+        <button class="btn" style="background:none; color:white;" onclick="show('landing')">← Back</button>
+    </div>
+
+    <!-- OTP VERIFICATION PAGE -->
+    <div id="otp-verify" class="page">
+        <h1>Verify OTP</h1>
+        <p id="otp-email-display">OTP sent to your email</p>
+        
+        <input type="text" id="otp-input" placeholder="Enter 6-digit OTP" maxlength="6" onkeypress="if(event.key==='Enter') verifyOTP()">
+        
+        <div id="otp-timer" style="color: var(--green); font-size: 13px; margin-bottom: 10px; font-weight: bold;">⏱️ Valid for: 5:00</div>
+        
+        <div id="otp-error" style="color: #ef4444; font-size: 13px; margin-bottom: 10px; display: none;"></div>
+        <div id="otp-success" style="color: #10b981; font-size: 13px; margin-bottom: 10px; display: none;"></div>
+        
+        <button class="btn btn-green" id="otp-btn" onclick="verifyOTP()">
+            <span id="otp-btn-text">Verify OTP</span>
+            <span id="otp-loading" style="display: none;">⏳ Verifying...</span>
+        </button>
+        
+        <button class="btn btn-outline" id="resend-otp-btn" onclick="resendOTP()" style="display: none;">
+            🔄 Resend OTP (<span id="resend-timer">30</span>s)
+        </button>
+        
+        <button class="btn" style="background:none; color:white; font-size: 12px;" onclick="show('signup')">← Back to Email</button>
+    </div>
+
+    <!-- PROFILE SETUP PAGE (After OTP Verification) -->
+    <div id="profile-setup" class="page">
+        <h1>Complete Your Profile</h1>
+        <p>Just a few more details</p>
+        
+        <input type="text" id="full-name" placeholder="Full Name">
+        <input type="text" id="user-id" placeholder="Create your User ID">
+        <input type="password" id="password" placeholder="Create Password">
+        
+        <div id="profile-error" style="color: #ef4444; font-size: 13px; margin-bottom: 10px; display: none;"></div>
+        <div id="profile-success" style="color: #10b981; font-size: 13px; margin-bottom: 10px; display: none;"></div>
+        
+        <button class="btn btn-blue" id="profile-btn" onclick="completeSignup()">
+            <span id="profile-btn-text">✓ Finish & Start Tracking</span>
+            <span id="profile-loading" style="display: none;">⏳ Creating...</span>
+        </button>
+        
+        <button class="btn" style="background:none; color:white;" onclick="show('landing')">Cancel</button>
+    </div>
+
+    <!-- FORGOT PASSWORD PAGE -->
+    <div id="forgot" class="page">
+        <h1>Find Account</h1>
+        <p>Enter email to reset password</p>
+        <input type="email" placeholder="Your Email">
+        <button class="btn btn-blue">Send Reset Code</button>
+        <button class="btn" style="background:none; color:white;" onclick="show('signin')">← Back to Login</button>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div id="dashboard" class="page fullscreen">
+        <div class="dashboard-container">
+            <!-- SIDEBAR -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <div style="width: 30px; height: 30px; background: linear-gradient(135deg, var(--blue), var(--green)); border-radius: 50%;"></div>
+                    <h2>GeoTrack</h2>
+                </div>
+                
+                <div>
+                    <p style="font-size: 12px; text-transform: uppercase; color: var(--gray); margin: 0 0 10px 0;">Friends List</p>
+                    <div class="friends-list">
+                        <div class="friend-item">
+                            <div class="friend-avatar">JD</div>
+                            <span>John Doe</span>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-avatar">SM</div>
+                            <span>Sarah Miller</span>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-avatar">AJ</div>
+                            <span>Alex Jones</span>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-avatar">EP</div>
+                            <span>Emma Parker</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-footer">
+                    <button class="sidebar-btn" onclick="show('settings')">⚙️ Settings</button>
+                    <button class="sidebar-btn" onclick="show('landing')">🚪 Logout</button>
+                </div>
+            </div>
+
+            <!-- MAIN CONTENT -->
+            <div class="main-content">
+                <div class="dashboard-header">
+                    <h1>Live Map</h1>
+                    <div class="header-actions">
+                        <button class="header-btn" onclick="alert('Sharing location...')">📍 Share Location</button>
+                        <button class="header-btn" onclick="alert('Refreshing...')">🔄 Refresh</button>
+                    </div>
+                </div>
+
+                <div class="map-area">
+                    <div class="map-placeholder">
+                        <div class="map-placeholder-text">
+                            <h2>🗺️ Interactive Map</h2>
+                            <p>Real-time location tracking for connected friends</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div id="settings" class="page fullscreen">
+        <div class="settings-container">
+            <div class="settings-header">
+                <h1>Settings</h1>
+                <button class="header-btn" onclick="show('dashboard')">← Back to Map</button>
+            </div>
+
+            <div class="settings-content">
+                <!-- Account Settings -->
+                <div class="settings-group">
+                    <h3>👤 Account</h3>
+                    <p>Manage your profile and account preferences</p>
+                    
+                    <div class="setting-item">
+                        <span class="setting-label">Display Name</span>
+                        <input type="text" placeholder="Your Name" style="width: 200px; margin: 0;">
+                    </div>
+                    <div class="setting-item" style="border: none; padding-top: 0;">
+                        <span class="setting-label">User ID</span>
+                        <input type="text" placeholder="user@geotrack" style="width: 200px; margin: 0; margin-bottom: 0;" readonly>
+                    </div>
+                </div>
+
+                <!-- Privacy Settings -->
+                <div class="settings-group">
+                    <h3>🔐 Privacy & Sharing</h3>
+                    <p>Control who can see your location</p>
+                    
+                    <div class="setting-item">
+                        <span class="setting-label">Share Location</span>
+                        <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Show Online Status</span>
+                        <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Allow Friends to Share</span>
+                        <div class="toggle-switch" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                </div>
+
+                <!-- Notification Settings -->
+                <div class="settings-group">
+                    <h3>🔔 Notifications</h3>
+                    <p>Customize your notification preferences</p>
+                    
+                    <div class="setting-item">
+                        <span class="setting-label">Location Updates</span>
+                        <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Friend Join/Leave</span>
+                        <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Emergency Alerts</span>
+                        <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                </div>
+
+                <!-- App Settings -->
+                <div class="settings-group">
+                    <h3>⚙️ App Settings</h3>
+                    <p>General application preferences</p>
+                    
+                    <div class="setting-item">
+                        <span class="setting-label">Dark Mode</span>
+                        <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Map Zoom Level</span>
+                        <input type="range" min="1" max="20" value="10" style="width: 120px; margin: 0;">
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="settings-group" style="border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05);">
+                    <h3 style="color: #ef4444;">⚠️ Danger Zone</h3>
+                    <button class="btn" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); width: auto;">Delete Account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== GLOBAL VARIABLES =====
+        let currentEmail = '';
+        let otpTimer = null;
+        let resendTimer = null;
+        let otpTimeLeft = 300; // 5 minutes
+        let resendTimeLeft = 0;
+
+        // ===== PAGE NAVIGATION =====
+        /**
+         * Show a specific page and hide others
+         */
+        function show(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            
+            // Reset timers when navigating away from OTP page
+            if (pageId !== 'otp-verify') {
+                clearInterval(otpTimer);
+                clearInterval(resendTimer);
+            }
+        }
+
+        // ===== SIGNUP FLOW =====
+        /**
+         * Send OTP to user's email (Signup)
+         */
+        async function sendOTPSignup() {
+            const email = document.getElementById('signup-email').value.trim();
+            const errorDiv = document.getElementById('signup-error');
+            const successDiv = document.getElementById('signup-success');
+            const btnText = document.getElementById('signup-btn-text');
+            const loading = document.getElementById('signup-loading');
+            const btn = document.getElementById('signup-btn');
+
+            // Clear previous messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // Validate email
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                errorDiv.textContent = '❌ Please enter a valid email';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Show loading state
+            btnText.style.display = 'none';
+            loading.style.display = 'inline';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, type: 'signup' })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentEmail = email;
+                    successDiv.textContent = `✅ ${data.message}`;
+                    successDiv.style.display = 'block';
+
+                    // Wait 2 seconds then navigate to OTP page
+                    setTimeout(() => {
+                        document.getElementById('otp-email-display').textContent = `OTP sent to ${email}`;
+                        show('otp-verify');
+                        startOTPTimer();
+                    }, 1500);
+                } else {
+                    errorDiv.textContent = `❌ ${data.message}`;
+                    errorDiv.style.display = 'block';
+                    
+                    // If cooldown error, show retry timer
+                    if (data.retryAfter) {
+                        showResendCooldown(data.retryAfter);
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = '❌ Network error. Please try again.';
+                errorDiv.style.display = 'block';
+            } finally {
+                btnText.style.display = 'inline';
+                loading.style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+
+        // ===== OTP VERIFICATION =====
+        /**
+         * Verify OTP entered by user
+         */
+        async function verifyOTP() {
+            const otp = document.getElementById('otp-input').value.trim();
+            const errorDiv = document.getElementById('otp-error');
+            const successDiv = document.getElementById('otp-success');
+            const btnText = document.getElementById('otp-btn-text');
+            const loading = document.getElementById('otp-loading');
+            const btn = document.getElementById('otp-btn');
+
+            // Clear previous messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // Validate OTP
+            if (!otp || otp.length !== 6) {
+                errorDiv.textContent = '❌ Please enter a valid OTP';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Show loading state
+            btnText.style.display = 'none';
+            loading.style.display = 'inline';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentEmail, otp })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    clearInterval(otpTimer);
+                    successDiv.textContent = '✅ OTP verified successfully!';
+                    successDiv.style.display = 'block';
+
+                    // Navigate to profile setup after 1 second
+                    setTimeout(() => {
+                        show('profile-setup');
+                    }, 1500);
+                } else {
+                    errorDiv.textContent = `❌ ${data.message}`;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = '❌ Network error. Please try again.';
+                errorDiv.style.display = 'block';
+            } finally {
+                btnText.style.display = 'inline';
+                loading.style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+
+        /**
+         * Resend OTP with cooldown
+         */
+        async function resendOTP() {
+            if (resendTimeLeft > 0) return;
+
+            const resendBtn = document.getElementById('resend-otp-btn');
+            const otpInput = document.getElementById('otp-input');
+            
+            // Clear previous OTP
+            otpInput.value = '';
+
+            await sendOTPSignup();
+
+            // Show cooldown timer (30 seconds)
+            resendBtn.style.display = 'none';
+            showResendCooldown(30);
+        }
+
+        /**
+         * Show resend cooldown timer
+         */
+        function showResendCooldown(seconds) {
+            resendTimeLeft = seconds;
+            const resendBtn = document.getElementById('resend-otp-btn');
+            const resendTimerSpan = document.getElementById('resend-timer');
+
+            resendBtn.style.display = 'block';
+
+            clearInterval(resendTimer);
+            resendTimer = setInterval(() => {
+                resendTimeLeft--;
+                resendTimerSpan.textContent = resendTimeLeft;
+
+                if (resendTimeLeft <= 0) {
+                    clearInterval(resendTimer);
+                    resendBtn.textContent = '🔄 Resend OTP';
+                    resendBtn.style.opacity = '1';
+                    resendBtn.style.cursor = 'pointer';
+                }
+            }, 1000);
+        }
+
+        /**
+         * Start OTP expiration timer (5 minutes)
+         */
+        function startOTPTimer() {
+            otpTimeLeft = 300; // 5 minutes
+            const timerDiv = document.getElementById('otp-timer');
+
+            clearInterval(otpTimer);
+            otpTimer = setInterval(() => {
+                otpTimeLeft--;
+                const minutes = Math.floor(otpTimeLeft / 60);
+                const seconds = otpTimeLeft % 60;
+
+                timerDiv.textContent = `⏱️ Valid for: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                if (otpTimeLeft <= 0) {
+                    clearInterval(otpTimer);
+                    timerDiv.textContent = '❌ OTP expired. Request a new one.';
+                    timerDiv.style.color = '#ef4444';
+                    document.getElementById('otp-btn').disabled = true;
+                }
+            }, 1000);
+        }
+
+        // ===== PROFILE SETUP =====
+        /**
+         * Complete signup and create user account
+         */
+        async function completeSignup() {
+            const fullName = document.getElementById('full-name').value.trim();
+            const userId = document.getElementById('user-id').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorDiv = document.getElementById('profile-error');
+            const successDiv = document.getElementById('profile-success');
+            const btnText = document.getElementById('profile-btn-text');
+            const loading = document.getElementById('profile-loading');
+            const btn = document.getElementById('profile-btn');
+
+            // Clear previous messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // Validate inputs
+            if (!fullName || !userId || !password) {
+                errorDiv.textContent = '❌ All fields are required';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (password.length < 6) {
+                errorDiv.textContent = '❌ Password must be at least 6 characters';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Show loading state
+            btnText.style.display = 'none';
+            loading.style.display = 'inline';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: currentEmail,
+                        fullName,
+                        userId,
+                        password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    successDiv.textContent = '✅ Account created successfully!';
+                    successDiv.style.display = 'block';
+
+                    // Navigate to dashboard after 2 seconds
+                    setTimeout(() => {
+                        // Reset form
+                        document.getElementById('full-name').value = '';
+                        document.getElementById('user-id').value = '';
+                        document.getElementById('password').value = '';
+                        document.getElementById('signup-email').value = '';
+
+                        show('dashboard');
+                    }, 2000);
+                } else {
+                    errorDiv.textContent = `❌ ${data.message}`;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = '❌ Network error. Please try again.';
+                errorDiv.style.display = 'block';
+            } finally {
+                btnText.style.display = 'inline';
+                loading.style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+    </script>
+
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"
+     integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" 
+     crossorigin="anonymous"></script>
+    <script src="/js/script.js"></script>
+</body>
+</html>

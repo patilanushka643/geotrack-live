@@ -1,0 +1,1142 @@
+<!-- GeoTrack Enhanced Home Page with Multi-Friend Support -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoTrack | Friend Location Sharing</title>
+    
+    <!-- Leaflet Map Library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    
+    <style>
+        :root {
+            --blue: #3b82f6;
+            --dark: #0f172a;
+            --white: #ffffff;
+            --gray: #94a3b8;
+            --green: #10b981;
+            --red: #ef4444;
+            --yellow: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            background-color: var(--dark);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .bg-grid {
+            position: absolute;
+            width: 200%; height: 200%;
+            background-image: linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            top: -50%;
+            z-index: -1;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            background: var(--dark);
+        }
+
+        .sidebar {
+            width: 380px;
+            background: rgba(30, 41, 59, 0.98);
+            border-right: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .sidebar-header .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--blue), var(--green));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .sidebar-header h2 {
+            font-size: 18px;
+        }
+
+        .user-info {
+            background: rgba(59, 130, 246, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            font-size: 13px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            margin: 5px 0;
+        }
+
+        .user-email {
+            color: var(--blue);
+            font-size: 12px;
+            margin: 5px 0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            margin-top: 5px;
+        }
+
+        .location-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .toggle-switch {
+            width: 45px;
+            height: 24px;
+            background: rgba(239, 68, 68, 0.5);
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            transition: 0.3s;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .toggle-switch.active {
+            background: var(--green);
+            border-color: var(--green);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--white);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            left: 23px;
+        }
+
+        .toggle-label {
+            font-size: 12px;
+            color: var(--gray);
+            flex: 1;
+        }
+
+        .friends-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 0;
+        }
+
+        .friends-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--gray);
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .friends-header-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .friends-header-btn {
+            padding: 3px 6px;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 3px;
+            color: var(--blue);
+            cursor: pointer;
+            font-size: 9px;
+            transition: 0.2s;
+        }
+
+        .friends-header-btn:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+
+        .friends-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .friend-item {
+            padding: 10px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .friend-item:hover {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .friend-item.selected {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: var(--blue);
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .friend-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: var(--blue);
+        }
+
+        .friend-avatar {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--blue), var(--green));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .friend-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .friend-name {
+            color: var(--white);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .friend-meta {
+            font-size: 10px;
+            color: var(--gray);
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .friend-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .friend-status.online {
+            background: var(--green);
+        }
+
+        .friend-status.offline {
+            background: var(--gray);
+        }
+
+        .friend-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .friend-action-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: var(--gray);
+            cursor: pointer;
+            font-size: 12px;
+            transition: 0.2s;
+            border-radius: 4px;
+        }
+
+        .friend-action-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--white);
+        }
+
+        .friend-action-btn.remove:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--red);
+        }
+
+        .sidebar-footer {
+            display: flex;
+            gap: 6px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .sidebar-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: transparent;
+            color: var(--gray);
+            cursor: pointer;
+            font-size: 12px;
+            transition: 0.2s;
+        }
+
+        .sidebar-btn:hover {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--white);
+        }
+
+        .sidebar-btn.logout {
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .sidebar-btn.logout:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .dashboard-header {
+            padding: 15px 25px;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+            background: rgba(30, 41, 59, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard-header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-btn {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--blue);
+            cursor: pointer;
+            font-size: 12px;
+            transition: 0.2s;
+        }
+
+        .header-btn:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+
+        .status-count {
+            padding: 6px 12px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--green);
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .map-area {
+            flex: 1;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .map-placeholder {
+            position: absolute;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(16, 185, 129, 0.1));
+            border: 2px dashed rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .map-placeholder-text {
+            text-align: center;
+        }
+
+        .map-placeholder-text h2 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .map-placeholder-text p {
+            color: var(--gray);
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background-color: var(--dark);
+            margin: 5% auto;
+            padding: 25px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-modal {
+            color: var(--gray);
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .close-modal:hover {
+            color: var(--white);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 6px;
+            color: var(--white);
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .user-list-item {
+            padding: 10px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-list-item:hover {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .user-list-info {
+            flex: 1;
+        }
+
+        .user-list-name {
+            color: var(--white);
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .user-list-email {
+            color: var(--gray);
+            font-size: 11px;
+        }
+
+        .add-friend-btn {
+            padding: 6px 10px;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--green);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: 0.2s;
+        }
+
+        .add-friend-btn:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+
+        .alert {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: none;
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+            max-width: 350px;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #86efac;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #bfdbfe;
+        }
+
+        .scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .scrollbar::-webkit-scrollbar-track {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 3px;
+        }
+
+        .scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container { flex-direction: column; }
+            .sidebar { width: 100%; max-height: 250px; border-right: none; border-bottom: 1px solid rgba(59, 130, 246, 0.2); }
+            .dashboard-header { flex-direction: column; gap: 8px; }
+            .header-actions { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+
+    <div id="alertSuccess" class="alert alert-success"></div>
+    <div id="alertError" class="alert alert-error"></div>
+    <div id="alertInfo" class="alert alert-info"></div>
+
+    <!-- Add Friend Modal -->
+    <div id="addFriendModal" class="modal scrollbar">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>➕ Add Friend</span>
+                <span class="close-modal" onclick="closeAddFriendModal()">&times;</span>
+            </div>
+            <input type="text" id="searchUserInput" class="search-box" placeholder="Search users by name...">
+            <div id="userSearchResults" style="max-height: 350px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <!-- SIDEBAR - FRIENDS LIST -->
+        <div class="sidebar scrollbar">
+            <div class="sidebar-header">
+                <div class="logo">🗺️</div>
+                <h2>GeoTrack</h2>
+            </div>
+
+            <div class="user-info">
+                <p style="font-size: 10px; color: var(--gray); text-transform: uppercase; margin: 0 0 4px 0;">Current User</p>
+                <div class="user-name"><%= user.fullName %></div>
+                <div class="user-email"><%= user.email %></div>
+                <div class="status-badge">✓ Online</div>
+            </div>
+
+            <div class="location-toggle">
+                <div class="toggle-label">📍 Share Location</div>
+                <div class="toggle-switch active" id="locationToggle" onclick="toggleLocationSharing()"></div>
+            </div>
+
+            <div class="friends-section">
+                <div class="friends-header">
+                    <span id="friendsCountHeader">Friends (0)</span>
+                    <div class="friends-header-actions">
+                        <button class="friends-header-btn" onclick="openAddFriendModal()">➕ Add</button>
+                        <button class="friends-header-btn" onclick="clearSelection()">✕ Clear</button>
+                    </div>
+                </div>
+                <div class="friends-list scrollbar" id="friendsList">
+                    <p style="color: var(--gray); text-align: center; font-size: 12px;">Loading...</p>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="sidebar-btn" onclick="openSettings()">⚙️ Settings</button>
+                <button class="sidebar-btn logout" onclick="handleLogout()">🚪 Logout</button>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT - MAP -->
+        <div class="main-content">
+            <div class="dashboard-header">
+                <h1>📍 Friends' Locations</h1>
+                <div class="header-actions">
+                    <div class="status-count" id="selectedCount">Selected: 0</div>
+                    <button class="header-btn" onclick="refreshFriends()">🔄 Refresh</button>
+                </div>
+            </div>
+
+            <div class="map-area">
+                <div id="map"></div>
+                <div class="map-placeholder" id="mapPlaceholder">
+                    <div class="map-placeholder-text">
+                        <h2>🗺️ Location Map</h2>
+                        <p>Select friends from the left to view their locations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // ===== CONSTANTS & VARIABLES =====
+        const FRIENDS_API = '/api/friends';
+        const LOCATION_API = '/api/location';
+        const currentUser = {
+            id: '<%= user._id %>',
+            name: '<%= user.fullName %>',
+            email: '<%= user.email %>'
+        };
+
+        let map = null;
+        let markers = {};
+        let selectedFriends = new Set();
+        let socket = null;
+        let locationSharingEnabled = true;
+        let locationUpdateInterval = null;
+        let friendsList = [];
+
+        // ===== INITIALIZATION =====
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeMap();
+            initializeSocket();
+            loadFriendsList();
+            startLocationTracking();
+            setupSearchFunctionality();
+        });
+
+        // ===== MAP INITIALIZATION =====
+        function initializeMap() {
+            const defaultLat = 37.7749;
+            const defaultLng = -122.4194;
+
+            map = L.map('map').setView([defaultLat, defaultLng], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19,
+            }).addTo(map);
+        }
+
+        // ===== SOCKET.IO SETUP =====
+        function initializeSocket() {
+            socket = io();
+
+            socket.on('user-joined', (data) => {
+                console.log('✅ User joined:', data.username);
+            });
+
+            socket.on('receive-location', (data) => {
+                if (selectedFriends.has(data.userId)) {
+                    updateMarkerOnMap(data);
+                }
+            });
+
+            socket.emit('user-join', {
+                userId: currentUser.id,
+                username: currentUser.name,
+            });
+        }
+
+        // ===== LOCATION TRACKING =====
+        function startLocationTracking() {
+            if (!('geolocation' in navigator)) {
+                showAlert('❌ Geolocation not supported', 'error');
+                return;
+            }
+
+            getAndShareLocation();
+
+            locationUpdateInterval = setInterval(() => {
+                if (locationSharingEnabled) {
+                    getAndShareLocation();
+                }
+            }, 5000);
+        }
+
+        function getAndShareLocation() {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude, accuracy } = position.coords;
+
+                    try {
+                        await fetch(`${LOCATION_API}/update`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ latitude, longitude, accuracy }),
+                        });
+
+                        socket.emit('send-location', {
+                            userId: currentUser.id,
+                            username: currentUser.name,
+                            latitude,
+                            longitude,
+                            accuracy,
+                        });
+                    } catch (error) {
+                        console.error('Error updating location:', error);
+                    }
+                },
+                (error) => {
+                    console.error('Geolocation error:', error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0,
+                }
+            );
+        }
+
+        // ===== LOAD FRIENDS LIST =====
+        async function loadFriendsList() {
+            try {
+                const response = await fetch(`${FRIENDS_API}/`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    friendsList = data.friends;
+                    renderFriendsList();
+                } else {
+                    friendsList = [];
+                    renderFriendsList();
+                }
+            } catch (error) {
+                console.error('Error loading friends:', error);
+                friendsList = [];
+                renderFriendsList();
+                showAlert('Failed to load friends', 'error');
+            }
+        }
+
+        // ===== RENDER FRIENDS LIST =====
+        function renderFriendsList() {
+            const friendsListDiv = document.getElementById('friendsList');
+            const friendsCountHeader = document.getElementById('friendsCountHeader');
+
+            friendsCountHeader.textContent = `Friends (${friendsList.length})`;
+
+            if (friendsList.length === 0) {
+                friendsListDiv.innerHTML = '<p style="color: var(--gray); text-align: center; margin-top: 15px; font-size: 12px;">No friends yet. Click ➕ Add to get started!</p>';
+                return;
+            }
+
+            friendsListDiv.innerHTML = friendsList.map(friend => `
+                <div class="friend-item ${selectedFriends.has(friend.id) ? 'selected' : ''}" id="friend-${friend.id}">
+                    <input 
+                        type="checkbox" 
+                        class="friend-checkbox" 
+                        ${selectedFriends.has(friend.id) ? 'checked' : ''}
+                        onchange="toggleFriendSelection('${friend.id}')">
+                    <div class="friend-avatar">${friend.username.substring(0, 2).toUpperCase()}</div>
+                    <div class="friend-details">
+                        <div class="friend-name">${friend.fullName}</div>
+                        <div class="friend-meta">
+                            <span class="friend-status ${friend.isOnline ? 'online' : 'offline'}"></span>
+                            <span>${friend.isOnline ? 'Online' : 'Offline'}</span>
+                            ${friend.lastUpdateMinutesAgo !== null ? `<span>• ${friend.lastUpdateMinutesAgo}m` : ''}
+                        </div>
+                    </div>
+                    <div class="friend-actions">
+                        <button class="friend-action-btn remove" onclick="removeFriend('${friend.id}')" title="Remove">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ===== FRIEND SELECTION =====
+        async function toggleFriendSelection(friendId) {
+            if (selectedFriends.has(friendId)) {
+                selectedFriends.delete(friendId);
+                removeMarkerFromMap(friendId);
+            } else {
+                selectedFriends.add(friendId);
+                await displayFriendLocation(friendId);
+            }
+
+            document.getElementById(`friend-${friendId}`)?.classList.toggle('selected');
+            updateSelectedCount();
+        }
+
+        async function displayFriendLocation(friendId) {
+            try {
+                const response = await fetch(`${FRIENDS_API}/${friendId}/location`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const friend = data.friend;
+                    updateMarkerOnMap(friend);
+                    fitMapToMarkers();
+                    document.getElementById('mapPlaceholder').style.display = 'none';
+                    showAlert(`📍 Viewing ${friend.fullName}'s location`, 'info');
+                } else {
+                    showAlert(`❌ ${data.message}`, 'error');
+                    selectedFriends.delete(friendId);
+                    document.getElementById(`friend-${friendId}`)?.classList.remove('selected');
+                }
+            } catch (error) {
+                console.error('Error fetching friend location:', error);
+                selectedFriends.delete(friendId);
+            }
+        }
+
+        // ===== UPDATE MARKERS ON MAP =====
+        function updateMarkerOnMap(data) {
+            if (!markers[data.id]) {
+                const markerColor = getColorForUser(data.id);
+                const marker = L.marker([data.latitude, data.longitude], {
+                    icon: L.icon({
+                        iconUrl: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSI5IiBmaWxsPSIke21hcmtlckNvbG9yfSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=`.replace('${markerColor}', markerColor),
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16],
+                    }),
+                }).addTo(map);
+
+                markers[data.id] = marker;
+            } else {
+                markers[data.id].setLatLng([data.latitude, data.longitude]);
+            }
+
+            markers[data.id].bindPopup(`<strong>${data.fullName}</strong><br>📍 ${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}`);
+        }
+
+        function removeMarkerFromMap(friendId) {
+            if (markers[friendId]) {
+                map.removeLayer(markers[friendId]);
+                delete markers[friendId];
+            }
+
+            if (Object.keys(markers).length === 0) {
+                document.getElementById('mapPlaceholder').style.display = 'flex';
+            }
+        }
+
+        function fitMapToMarkers() {
+            if (Object.keys(markers).length === 0) return;
+            const group = new L.featureGroup(Object.values(markers));
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+
+        function getColorForUser(userId) {
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4'];
+            let hash = 0;
+            for (let i = 0; i < userId.length; i++) {
+                hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        // ===== FRIEND MANAGEMENT =====
+        async function removeFriend(friendId) {
+            if (!confirm('Remove this friend?')) return;
+
+            try {
+                const response = await fetch(`${FRIENDS_API}/${friendId}/remove`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    selectedFriends.delete(friendId);
+                    removeMarkerFromMap(friendId);
+                    await loadFriendsList();
+                    updateSelectedCount();
+                    showAlert('👋 Friend removed', 'success');
+                }
+            } catch (error) {
+                showAlert('Failed to remove friend', 'error');
+            }
+        }
+
+        // ===== MODAL FUNCTIONS =====
+        function openAddFriendModal() {
+            document.getElementById('addFriendModal').style.display = 'block';
+            document.getElementById('userSearchResults').innerHTML = '';
+            document.getElementById('searchUserInput').value = '';
+            document.getElementById('searchUserInput').focus();
+        }
+
+        function closeAddFriendModal() {
+            document.getElementById('addFriendModal').style.display = 'none';
+        }
+
+        window.onclick = (event) => {
+            const modal = document.getElementById('addFriendModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        function setupSearchFunctionality() {
+            const searchInput = document.getElementById('searchUserInput');
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                if (query.length < 1) {
+                    document.getElementById('userSearchResults').innerHTML = '';
+                    return;
+                }
+                searchUsers(query);
+            });
+        }
+
+        async function searchUsers(query) {
+            try {
+                const response = await fetch(`${LOCATION_API}/users`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const friendIds = new Set(friendsList.map(f => f.id));
+                    const filtered = data.users.filter(user =>
+                        !friendIds.has(user.id) &&
+                        (user.fullName.toLowerCase().includes(query) ||
+                         user.username.toLowerCase().includes(query))
+                    );
+
+                    const resultsDiv = document.getElementById('userSearchResults');
+                    if (filtered.length === 0) {
+                        resultsDiv.innerHTML = '<p style="color: var(--gray); text-align: center; font-size: 12px;">No users found</p>';
+                        return;
+                    }
+
+                    resultsDiv.innerHTML = filtered.map(user => `
+                        <div class="user-list-item">
+                            <div class="user-list-info">
+                                <div class="user-list-name">${user.fullName}</div>
+                                <div class="user-list-email">@${user.username}</div>
+                            </div>
+                            <button class="add-friend-btn" onclick="sendFriendRequest('${user.id}')">+ Add</button>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error searching users:', error);
+            }
+        }
+
+        async function sendFriendRequest(targetUserId) {
+            try {
+                const response = await fetch(`${FRIENDS_API}/request/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetUserId }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('✅ Friend request sent!', 'success');
+                    closeAddFriendModal();
+                    setTimeout(() => loadFriendsList(), 1000);
+                } else {
+                    showAlert(`❌ ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showAlert('Failed to send request', 'error');
+            }
+        }
+
+        // ===== LOCATION SHARING TOGGLE =====
+        async function toggleLocationSharing() {
+            const toggle = document.getElementById('locationToggle');
+            locationSharingEnabled = !locationSharingEnabled;
+            toggle.classList.toggle('active');
+
+            try {
+                const response = await fetch(`${LOCATION_API}/toggle-sharing`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ isEnabled: locationSharingEnabled }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(`📍 Location ${locationSharingEnabled ? 'enabled' : 'disabled'}`, 'success');
+                    if (locationSharingEnabled) {
+                        startLocationTracking();
+                    } else {
+                        clearInterval(locationUpdateInterval);
+                    }
+                }
+            } catch (error) {
+                showAlert('Failed to toggle sharing', 'error');
+            }
+        }
+
+        // ===== UTILITIES =====
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = `Selected: ${selectedFriends.size}`;
+        }
+
+        function clearSelection() {
+            selectedFriends.forEach(friendId => {
+                removeMarkerFromMap(friendId);
+                const elem = document.getElementById(`friend-${friendId}`);
+                if (elem) {
+                    elem.classList.remove('selected');
+                    elem.querySelector('.friend-checkbox').checked = false;
+                }
+            });
+            selectedFriends.clear();
+            updateSelectedCount();
+            document.getElementById('mapPlaceholder').style.display = 'flex';
+        }
+
+        function refreshFriends() {
+            loadFriendsList();
+            showAlert('🔄 Refreshed', 'info');
+        }
+
+        function handleLogout() {
+            if (!confirm('Logout?')) return;
+            fetch('/api/logout', { method: 'POST' });
+            document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+            setTimeout(() => { window.location.href = '/login'; }, 500);
+        }
+
+        function openSettings() {
+            alert('⚙️ Settings coming soon!');
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.getElementById(`alert${type.charAt(0).toUpperCase() + type.slice(1)}`);
+            alertDiv.textContent = message;
+            alertDiv.style.display = 'block';
+            setTimeout(() => { alertDiv.style.display = 'none'; }, 4000);
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (locationUpdateInterval) clearInterval(locationUpdateInterval);
+        });
+    </script>
+</body>
+</html>

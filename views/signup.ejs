@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoTrack | Sign Up</title>
+    <style>
+        :root {
+            --blue: #3b82f6;
+            --dark: #0f172a;
+            --white: #ffffff;
+            --gray: #94a3b8;
+            --green: #10b981;
+            --red: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+
+        body {
+            background-color: var(--dark);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bg-grid {
+            position: absolute;
+            width: 200%; height: 200%;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            top: -50%;
+            animation: move 20s linear infinite;
+            z-index: -1;
+        }
+        @keyframes move { from { background-position: 0 0; } to { background-position: 0 1000px; } }
+
+        .container {
+            width: 90%;
+            max-width: 420px;
+            padding: 40px;
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .step-container {
+            display: none;
+        }
+
+        .step-container.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--blue), var(--green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: var(--gray);
+            font-size: 14px;
+        }
+
+        .step-indicator {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+
+        .step-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--gray);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            transition: 0.3s;
+        }
+
+        .step-badge.active {
+            background: var(--blue);
+            color: white;
+            border-color: var(--blue);
+        }
+
+        .step-badge.completed {
+            background: var(--green);
+            color: white;
+            border-color: var(--green);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: white;
+            font-size: 15px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #86efac;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #bfdbfe;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--blue), #2563eb);
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--green), #059669);
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: var(--blue);
+            margin-bottom: 12px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .timer {
+            text-align: center;
+            font-size: 13px;
+            color: var(--green);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(59, 130, 246, 0.2);
+            color: var(--gray);
+            font-size: 14px;
+        }
+
+        .login-link a {
+            color: var(--blue);
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .login-link a:hover {
+            color: var(--green);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 95%;
+                padding: 25px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .step-indicator {
+                gap: 5px;
+            }
+
+            .step-badge {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ GeoTrack</h1>
+            <p>Create your account to get started</p>
+        </div>
+
+        <div class="step-indicator">
+            <div class="step-badge active" id="step1-badge">1</div>
+            <div class="step-badge" id="step2-badge">2</div>
+            <div class="step-badge" id="step3-badge">3</div>
+        </div>
+
+        <!-- STEP 1: EMAIL ENTRY -->
+        <div class="step-container active" id="step1">
+            <div id="step1Error" class="alert alert-error"></div>
+            <div id="step1Success" class="alert alert-success"></div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    placeholder="your@email.com"
+                    required
+                    autofocus
+                />
+            </div>
+
+            <button class="btn btn-primary" id="step1Btn" onclick="sendOTP()">
+                <span id="step1BtnText">Send OTP</span>
+                <span id="step1Loading" class="spinner" style="display: none;"></span>
+            </button>
+
+            <div class="login-link">
+                Already have an account? <a href="/login">Login Here</a>
+            </div>
+        </div>
+
+        <!-- STEP 2: OTP VERIFICATION -->
+        <div class="step-container" id="step2">
+            <div id="step2Error" class="alert alert-error"></div>
+            <div id="step2Success" class="alert alert-success"></div>
+
+            <p style="color: var(--gray); font-size: 14px; margin-bottom: 20px; text-align: center;" id="otpEmailDisplay">
+                OTP has been sent to your email
+            </p>
+
+            <div class="timer" id="otpTimer">⏱️ Valid for: 5:00</div>
+
+            <div class="form-group">
+                <label for="otp">OTP Code</label>
+                <input 
+                    type="text" 
+                    id="otp" 
+                    placeholder="000000"
+                    maxlength="6"
+                    required
+                />
+            </div>
+
+            <button class="btn btn-primary" id="step2Btn" onclick="verifyOTP()">
+                <span id="step2BtnText">Verify OTP</span>
+                <span id="step2Loading" class="spinner" style="display: none;"></span>
+            </button>
+
+            <button class="btn btn-secondary" id="resendBtn" onclick="resendOTP()" style="display: none;">
+                🔄 Resend OTP (<span id="resendTimer">30</span>s)
+            </button>
+
+            <button class="btn btn-secondary" onclick="goToStep1()">← Back to Email</button>
+        </div>
+
+        <!-- STEP 3: PROFILE SETUP -->
+        <div class="step-container" id="step3">
+            <div id="step3Error" class="alert alert-error"></div>
+            <div id="step3Success" class="alert alert-success"></div>
+            <div id="step3Info" class="alert alert-info" style="display: block;">
+                ℹ️ Complete your profile to finish registration
+            </div>
+
+            <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <input 
+                    type="text" 
+                    id="fullName" 
+                    placeholder="John Doe"
+                    required
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="userId">User ID</label>
+                <input 
+                    type="text" 
+                    id="userId" 
+                    placeholder="johndoe123"
+                    required
+                />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="At least 6 characters"
+                    required
+                    minlength="6"
+                />
+            </div>
+
+            <button class="btn btn-success" id="step3Btn" onclick="completeSignup()">
+                <span id="step3BtnText">✓ Complete Registration</span>
+                <span id="step3Loading" class="spinner" style="display: none;"></span>
+            </button>
+
+            <button class="btn btn-secondary" onclick="goToStep2()">← Back to OTP</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let currentEmail = '';
+        let otpTimer = null;
+        let resendTimer = null;
+        let otpTimeLeft = 300;
+        let resendTimeLeft = 0;
+
+        // ===== STEP 1: SEND OTP =====
+        async function sendOTP() {
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const errorDiv = document.getElementById('step1Error');
+            const successDiv = document.getElementById('step1Success');
+            const btn = document.getElementById('step1Btn');
+            const btnText = document.getElementById('step1BtnText');
+            const loading = document.getElementById('step1Loading');
+
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // Validate email
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                errorDiv.textContent = '❌ Please enter a valid email';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            loading.style.display = 'inline-block';
+
+            try {
+                const response = await fetch(`${API_BASE}/send-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, type: 'signup' })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentEmail = email;
+                    successDiv.textContent = `✅ OTP sent to ${email}`;
+                    successDiv.style.display = 'block';
+
+                    setTimeout(() => {
+                        document.getElementById('otpEmailDisplay').textContent = `OTP sent to ${email}`;
+                        goToStep2();
+                        startOTPTimer();
+                    }, 1500);
+                } else {
+                    errorDiv.textContent = `❌ ${data.message}`;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = '❌ Network error. Please try again.';
+                errorDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btnText.style.display = 'inline';
+                loading.style.display = 'none';
+            }
+        }
+
+        // ===== STEP 2: VERIFY OTP =====
+        async function verifyOTP() {
+            const otp = document.getElementById('otp').value.trim();
+            const errorDiv = document.getElementById('step2Error');
+            const successDiv = document.getElementById('step2Success');
+            const btn = document.getElementById('step2Btn');
+            const btnText = document.getElementById('step2BtnText');
+            const loading = document.getElementById('step2Loading');
+
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            if (!otp || otp.length !== 6) {
+                errorDiv.textContent = '❌ Please enter a valid 6-digit OTP';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            loading.style.display = 'inline-block';
+
+            try {
+                const response = await fetch(`${API_BASE}/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentEmail, otp })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    clearInterval(otpTimer);
+                    successDiv.textContent = '✅ OTP verified successfully!';
+                    successDiv.style.display = 'block';
+
+                    setTimeout(() => {
+                        goToStep3();
+                    }, 1500);
+                } else {
+                    errorDiv.textContent = `❌ ${data.message}`;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = '❌ Network error. Please try again.';
+                errorDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btnText.style.display = 'inline';
+                loading.style.display = 'none';
+            }
+        }
+
+        // ===== STEP 3: COMPLETE SIGNUP =====
+        async function completeSignup() {
+            const fullName = document.getElementById('fullName').value.trim();
+            const userId = document.getElementById('userId').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorDiv = document.getElementById('step3Error');
+            const successDiv = document.getElementById('step3Success');
+            const btn = document.getElementById('step3Btn');
+            const btnText = document.getElementById('step3BtnText');
+            const loading = document.getElementById('step3Loading');
+
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            if (!fullName || !userId || !password) {
+                errorDiv.textContent = '❌ Please fill in all fields';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (password.length < 6) {
+                errorDiv.textContent = '❌ Password must be at least 6 characters';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            loading.style.display = 'inline-block';
+
+            try {
+                const response = await fetch(`${API_BASE}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentEmail, fullName, userId, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    successDiv.textContent = '✅ Registration successful! Redirecting to login...';
+                    successDiv.style.display = 'block';
+
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    errorDiv.textContent = `❌ ${data.message}`;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = '❌ Network error. Please try again.';
+                errorDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btnText.style.display = 'inline';
+                loading.style.display = 'none';
+            }
+        }
+
+        // ===== NAVIGATION =====
+        function goToStep1() {
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.remove('active');
+            updateStepIndicators(1);
+            clearInterval(otpTimer);
+            clearInterval(resendTimer);
+        }
+
+        function goToStep2() {
+            document.getElementById('step1').classList.remove('active');
+            document.getElementById('step2').classList.add('active');
+            document.getElementById('step3').classList.remove('active');
+            updateStepIndicators(2);
+        }
+
+        function goToStep3() {
+            document.getElementById('step1').classList.remove('active');
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.add('active');
+            updateStepIndicators(3);
+        }
+
+        function updateStepIndicators(step) {
+            document.getElementById('step1-badge').className = 'step-badge ' + (step >= 1 ? 'completed' : '');
+            document.getElementById('step2-badge').className = 'step-badge ' + (step >= 2 ? step === 2 ? 'active' : 'completed' : '');
+            document.getElementById('step3-badge').className = 'step-badge ' + (step === 3 ? 'active' : '');
+        }
+
+        // ===== TIMERS =====
+        function startOTPTimer() {
+            otpTimeLeft = 300;
+            const timerDiv = document.getElementById('otpTimer');
+
+            clearInterval(otpTimer);
+            otpTimer = setInterval(() => {
+                otpTimeLeft--;
+                const minutes = Math.floor(otpTimeLeft / 60);
+                const seconds = otpTimeLeft % 60;
+
+                timerDiv.textContent = `⏱️ Valid for: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                if (otpTimeLeft <= 0) {
+                    clearInterval(otpTimer);
+                    timerDiv.textContent = '❌ OTP expired. Request a new one.';
+                    timerDiv.style.color = 'var(--red)';
+                    document.getElementById('step2Btn').disabled = true;
+                    showResendCooldown(0);
+                }
+            }, 1000);
+        }
+
+        async function resendOTP() {
+            if (resendTimeLeft > 0) return;
+            document.getElementById('otp').value = '';
+            await sendOTP();
+        }
+
+        function showResendCooldown(seconds) {
+            resendTimeLeft = seconds;
+            const resendBtn = document.getElementById('resendBtn');
+            const resendTimerSpan = document.getElementById('resendTimer');
+
+            resendBtn.style.display = 'block';
+
+            clearInterval(resendTimer);
+            if (seconds > 0) {
+                resendTimer = setInterval(() => {
+                    resendTimeLeft--;
+                    resendTimerSpan.textContent = resendTimeLeft;
+
+                    if (resendTimeLeft <= 0) {
+                        clearInterval(resendTimer);
+                        resendBtn.textContent = '🔄 Resend OTP';
+                    }
+                }, 1000);
+            } else {
+                resendBtn.style.display = 'block';
+                resendBtn.textContent = '🔄 Resend OTP Now';
+            }
+        }
+    </script>
+</body>
+</html>

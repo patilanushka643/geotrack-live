@@ -1,0 +1,38 @@
+const mongoose = require("mongoose");
+
+const FriendshipSchema = new mongoose.Schema(
+  {
+    user1: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    user2: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "accepted", "blocked"],
+      default: "pending",
+      index: true,
+    },
+    requestedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
+
+// Ensure no duplicate friendships
+FriendshipSchema.index(
+  { user1: 1, user2: 1 },
+  { unique: true }
+);
+
+module.exports = mongoose.model("Friendship", FriendshipSchema);

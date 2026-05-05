@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoTrack | Verify OTP</title>
+    <style>
+        :root {
+            --blue: #3b82f6;
+            --dark: #0f172a;
+            --white: #ffffff;
+            --gray: #94a3b8;
+            --green: #10b981;
+            --red: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+
+        body {
+            background-color: var(--dark);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bg-grid {
+            position: absolute;
+            width: 200%; height: 200%;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            top: -50%;
+            animation: move 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes move { 
+            from { background-position: 0 0; } 
+            to { background-position: 0 1000px; } 
+        }
+
+        .container {
+            width: 90%;
+            max-width: 420px;
+            padding: 40px;
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--blue), var(--green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: var(--gray);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: white;
+            font-size: 15px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #64748b;
+        }
+
+        .otp-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .otp-input {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            text-align: center;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: white;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .otp-input:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #86efac;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--blue), #2563eb);
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--blue);
+            border: 1px solid var(--blue);
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .resend-section {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 13px;
+            color: var(--gray);
+        }
+
+        .resend-section button {
+            background: none;
+            border: none;
+            color: var(--blue);
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 13px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .resend-section button:hover:not(:disabled) {
+            color: var(--green);
+        }
+
+        .resend-section button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            text-decoration: none;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .back-link a {
+            color: var(--blue);
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .back-link a:hover {
+            color: var(--green);
+            text-decoration: underline;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 95%;
+                padding: 25px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .otp-input-group {
+                gap: 8px;
+            }
+
+            .otp-input {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ GeoTrack</h1>
+            <p>Verify your OTP. Enter the 6-digit code sent to your email.</p>
+        </div>
+
+        <div id="errorMsg" class="alert alert-error"></div>
+        <div id="successMsg" class="alert alert-success"></div>
+        <div id="infoMsg" class="alert alert-info"></div>
+
+        <form id="verifyOtpForm" onsubmit="handleVerifyOtp(event)">
+            <div class="form-group">
+                <label>Enter OTP</label>
+                <div class="otp-input-group" id="otpInputGroup">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" required>
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" required>
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" required>
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" required>
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" required>
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="verifyBtn">
+                <span id="btnText">Verify OTP</span>
+                <span id="btnLoading" class="spinner" style="display: none;"></span>
+            </button>
+        </form>
+
+        <div class="resend-section">
+            <p>Didn't receive the code? 
+                <button type="button" id="resendBtn" onclick="handleResendOtp()">Resend OTP</button>
+                <span id="cooldown" style="display: none;">(<span id="cooldownTime">30</span>s)</span>
+            </p>
+        </div>
+
+        <div class="back-link">
+            <a href="/forgot-password">← Change Email</a>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let cooldownTimer = null;
+
+        function showAlert(elementId, message, type) {
+            const alertEl = document.getElementById(elementId);
+            alertEl.textContent = message;
+            alertEl.className = `alert alert-${type}`;
+            alertEl.style.display = 'block';
+        }
+
+        function hideAlert(elementId) {
+            document.getElementById(elementId).style.display = 'none';
+        }
+
+        function setButtonLoading(isLoading) {
+            const verifyBtn = document.getElementById('verifyBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoading = document.getElementById('btnLoading');
+
+            if (isLoading) {
+                verifyBtn.disabled = true;
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline-block';
+            } else {
+                verifyBtn.disabled = false;
+                btnText.style.display = 'inline-block';
+                btnLoading.style.display = 'none';
+            }
+        }
+
+        // Auto-move to next input
+        const otpInputs = document.querySelectorAll('.otp-input');
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+        });
+
+        function getOtp() {
+            return Array.from(otpInputs).map(input => input.value).join('');
+        }
+
+        async function handleVerifyOtp(event) {
+            event.preventDefault();
+            hideAlert('errorMsg');
+            hideAlert('successMsg');
+
+            const email = sessionStorage.getItem('resetEmail');
+            if (!email) {
+                showAlert('errorMsg', 'Email not found. Please start over.', 'error');
+                return;
+            }
+
+            const otp = getOtp();
+            if (otp.length !== 6) {
+                showAlert('errorMsg', 'Please enter a valid 6-digit OTP', 'error');
+                return;
+            }
+
+            setButtonLoading(true);
+
+            try {
+                const response = await fetch(`${API_BASE}/verify-reset-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showAlert('errorMsg', data.message || 'OTP verification failed', 'error');
+                    setButtonLoading(false);
+                    return;
+                }
+
+                showAlert('successMsg', 'OTP verified! Redirecting to reset password...', 'success');
+                
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/reset-password';
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('errorMsg', 'An error occurred. Please try again.', 'error');
+                setButtonLoading(false);
+            }
+        }
+
+        function startCooldown() {
+            let seconds = 30;
+            document.getElementById('resendBtn').disabled = true;
+            document.getElementById('cooldown').style.display = 'inline';
+
+            cooldownTimer = setInterval(() => {
+                seconds--;
+                document.getElementById('cooldownTime').textContent = seconds;
+
+                if (seconds <= 0) {
+                    clearInterval(cooldownTimer);
+                    document.getElementById('resendBtn').disabled = false;
+                    document.getElementById('cooldown').style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        async function handleResendOtp() {
+            hideAlert('errorMsg');
+            hideAlert('successMsg');
+
+            const email = sessionStorage.getItem('resetEmail');
+            if (!email) {
+                showAlert('errorMsg', 'Email not found. Please start over.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showAlert('errorMsg', data.message || 'Failed to resend OTP', 'error');
+                    return;
+                }
+
+                showAlert('successMsg', 'OTP resent successfully!', 'success');
+                startCooldown();
+
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('errorMsg', 'An error occurred. Please try again.', 'error');
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            const email = sessionStorage.getItem('resetEmail');
+            if (!email) {
+                showAlert('infoMsg', 'Please enter your email first', 'info');
+                setTimeout(() => {
+                    window.location.href = '/forgot-password';
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>
