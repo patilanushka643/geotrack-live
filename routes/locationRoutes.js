@@ -1,15 +1,12 @@
 const express = require("express");
-const {
-  updateLocation,
-  getUsersList,
-  getUserLocation,
-  toggleLocationSharing,
-  getMyLocation,
-  getLocationHistory,
-  getAllActiveLocations,
-  getLocationSharingStatus,
-  getAllUsers,
+const { 
+    updateLocation, 
+    getUsersList, 
+    getAllUsers, 
+    getAllActiveLocations, 
+    getLocationSharingStatus 
 } = require("../controllers/locationController");
+
 const { verifyAuth } = require("../middleware/authMiddleware");
 
 const router = express.Router();
