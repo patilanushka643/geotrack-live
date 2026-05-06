@@ -292,12 +292,10 @@ async function getLocationHistory(req, res) {
     });
   }
 }
-
-module.exports = {
-  updateLocation,
-  getUsersList,
-  getUserLocation,
-  toggleLocationSharing,
-  getMyLocation,
-  getLocationHistory,
+ module.exports = {
+    updateLocation,
+    getUsersList,    // Check karein ye yahan hai ya nahi
+    getAllUsers,     // Check karein ye yahan hai ya nahi
+    getAllActiveLocations,
+    getLocationSharingStatus
 };
