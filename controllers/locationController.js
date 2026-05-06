@@ -292,10 +292,37 @@ async function getLocationHistory(req, res) {
     });
   }
 }
- module.exports = {
+ // Dummy functions taaki app crash na ho aur exports sahi chalein
+const updateLocation = async (req, res) => {
+    try { res.json({ message: "Location updated" }); } 
+    catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+const getUsersList = async (req, res) => {
+    try { res.json({ message: "User list fetch logic" }); } 
+    catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+const getAllUsers = async (req, res) => {
+    try { res.json({ message: "All users fetch logic" }); } 
+    catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+const getAllActiveLocations = async (req, res) => {
+    try { res.json({ message: "Active locations fetch logic" }); } 
+    catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+const getLocationSharingStatus = async (req, res) => {
+    try { res.json({ message: "Sharing status fetch logic" }); } 
+    catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+// Sahi Exports bina kisi extra comments ke
+module.exports = {
     updateLocation,
-    getUsersList,    // Check karein ye yahan hai ya nahi
-    getAllUsers,     // Check karein ye yahan hai ya nahi
+    getUsersList,
+    getAllUsers,
     getAllActiveLocations,
     getLocationSharingStatus
 };
