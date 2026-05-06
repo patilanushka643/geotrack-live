@@ -111,7 +111,10 @@ const getLocationSharingStatus = async (req, res) => {
 module.exports = {
     updateLocation,
     getUsersList,
-    getUserLocation,
+    getUserLocation,         // <--- Ye line honi zaroori hai
+    toggleLocationSharing,
+    getMyLocation,
+    getLocationHistory,
     getAllUsers,
     getAllActiveLocations,
     getLocationSharingStatus
