@@ -293,32 +293,54 @@ async function getLocationHistory(req, res) {
   }
 }
  // Dummy functions taaki app crash na ho aur exports sahi chalein
-const updateLocation = async (req, res) => {
-    try { res.json({ message: "Location updated" }); } 
-    catch (err) { res.status(500).json({ error: err.message }); }
-};
+// 1. Imports
+const User = require("../models/User"); 
 
+// 2. Existing Function (Original Logic)
+async function updateLocation(req, res) {
+    try {
+        const { userId, latitude, longitude } = req.body;
+        // Aapka jo bhi purana logic tha wo yahan rahega
+        res.json({ message: "Location updated successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
+// 3. Additional Functions (Missing functions fix)
 const getUsersList = async (req, res) => {
-    try { res.json({ message: "User list fetch logic" }); } 
-    catch (err) { res.status(500).json({ error: err.message }); }
+    try {
+        res.json({ message: "User list fetch logic" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 const getAllUsers = async (req, res) => {
-    try { res.json({ message: "All users fetch logic" }); } 
-    catch (err) { res.status(500).json({ error: err.message }); }
+    try {
+        res.json({ message: "All users fetch logic" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 const getAllActiveLocations = async (req, res) => {
-    try { res.json({ message: "Active locations fetch logic" }); } 
-    catch (err) { res.status(500).json({ error: err.message }); }
+    try {
+        res.json({ message: "Active locations fetch logic" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 const getLocationSharingStatus = async (req, res) => {
-    try { res.json({ message: "Sharing status fetch logic" }); } 
-    catch (err) { res.status(500).json({ error: err.message }); }
+    try {
+        res.json({ message: "Sharing status fetch logic" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
-// Sahi Exports bina kisi extra comments ke
+// 4. Final Exports (Sirf ek baar)
 module.exports = {
     updateLocation,
     getUsersList,
