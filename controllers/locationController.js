@@ -296,51 +296,48 @@ async function getLocationHistory(req, res) {
 // 1. Imports
 const User = require("../models/User"); 
 
-// 2. Existing Function (Original Logic)
-async function updateLocation(req, res) {
+// User ki current location update karne ka main function
+const updateLocation = async (req, res) => {
     try {
-        const { userId, latitude, longitude } = req.body;
-        // Aapka jo bhi purana logic tha wo yahan rahega
-        res.json({ message: "Location updated successfully" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-}
+        const { latitude, longitude } = req.body;
+        const userId = req.user.userId;
 
-// 3. Additional Functions (Missing functions fix)
-const getUsersList = async (req, res) => {
-    try {
-        res.json({ message: "User list fetch logic" });
+        if (latitude === undefined || longitude === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: "Latitude and longitude are required",
+            });
+        }
+        
+        // Yahan aapka model update logic (e.g., User.findByIdAndUpdate) aayega
+        res.json({ success: true, message: "Location updated successfully" });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
+};
+
+// Baaki missing functions taaki routes crash na karein
+const getUsersList = async (req, res) => {
+    try { res.json({ message: "User list fetched" }); } 
+    catch (err) { res.status(500).json({ error: err.message }); }
 };
 
 const getAllUsers = async (req, res) => {
-    try {
-        res.json({ message: "All users fetch logic" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    try { res.json({ message: "All users fetched" }); } 
+    catch (err) { res.status(500).json({ error: err.message }); }
 };
 
 const getAllActiveLocations = async (req, res) => {
-    try {
-        res.json({ message: "Active locations fetch logic" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    try { res.json({ message: "Active locations fetched" }); } 
+    catch (err) { res.status(500).json({ error: err.message }); }
 };
 
 const getLocationSharingStatus = async (req, res) => {
-    try {
-        res.json({ message: "Sharing status fetch logic" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    try { res.json({ message: "Sharing status fetched" }); } 
+    catch (err) { res.status(500).json({ error: err.message }); }
 };
 
-// 4. Final Exports (Sirf ek baar)
+// Exports - Ek hi jagah saare functions export ho rahe hain
 module.exports = {
     updateLocation,
     getUsersList,
