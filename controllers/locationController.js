@@ -81,30 +81,88 @@ const getUsersList = async (req, res) => {
 const getUserLocation = async (req, res) => {
     try {
         const user = await User.findById(req.params.userId).select("fullName userId latitude longitude locationLastUpdated isLocationSharing");
-        if (!user || !user.isLocationSharing) return res.status(404).json({ message: "Location not available" });
-        res.json({ success: true, user });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+        if (!user || !user.isLocationSharing) return res.status(404).json({ success: false, message: "Location not available" });
+        return res.json({ success: true, user });
+    } catch (error) {
+        console.error("getUserLocation error:", error.message);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+const getMyLocation = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId).select("fullName userId latitude longitude locationLastUpdated isLocationSharing");
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+        if (!user.isLocationSharing) return res.status(404).json({ success: false, message: "Location not available" });
+        return res.json({ success: true, user });
+    } catch (error) {
+        console.error("getMyLocation error:", error.message);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+const toggleLocationSharing = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const explicit = typeof req.body.enable === 'boolean';
+
+        let user = await User.findById(userId).select('isLocationSharing');
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        const newStatus = explicit ? req.body.enable : !user.isLocationSharing;
+
+        user.isLocationSharing = newStatus;
+        await user.save();
+
+        return res.json({ success: true, isLocationSharing: user.isLocationSharing });
+    } catch (error) {
+        console.error("toggleLocationSharing error:", error.message);
+        return res.status(500).json({ success: false, error: error.message });
+    }
 };
 
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({});
-        res.json({ success: true, data: users });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+        return res.json({ success: true, data: users });
+    } catch (err) {
+        console.error("getAllUsers error:", err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
 };
 
 const getAllActiveLocations = async (req, res) => {
     try {
-        const activeUsers = await User.find({ "location.coordinates": { $exists: true } });
-        res.json({ success: true, data: activeUsers });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+        // Return users who have location sharing enabled
+        const activeUsers = await User.find({ isLocationSharing: true }).select("_id fullName userId latitude longitude locationLastUpdated");
+        return res.json({ success: true, data: activeUsers });
+    } catch (err) {
+        console.error("getAllActiveLocations error:", err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
 };
 
 const getLocationSharingStatus = async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId, 'isSharingLocation');
-        res.json({ success: true, status: user.isSharingLocation });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+        const user = await User.findById(req.user.userId).select('isLocationSharing');
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        return res.json({ success: true, status: user.isLocationSharing });
+    } catch (err) {
+        console.error("getLocationSharingStatus error:", err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+const getLocationHistory = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const limit = Math.min(parseInt(req.query.limit || '100', 10), 1000);
+        const history = await LocationHistory.find({ userId }).sort({ createdAt: -1 }).limit(limit);
+        return res.json({ success: true, data: history });
+    } catch (err) {
+        console.error("getLocationHistory error:", err.message);
+        return res.status(500).json({ success: false, error: err.message });
+    }
 };
 
 // 4. FINAL EXPORTS

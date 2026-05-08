@@ -4,7 +4,11 @@ const {
     getUsersList, 
     getAllUsers, 
     getAllActiveLocations, 
-    getLocationSharingStatus 
+    getLocationSharingStatus,
+    getUserLocation,
+    getMyLocation,
+    toggleLocationSharing,
+    getLocationHistory
 } = require("../controllers/locationController");
 
 const { verifyAuth } = require("../middleware/authMiddleware");
