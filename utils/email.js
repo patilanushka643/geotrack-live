@@ -2,21 +2,34 @@ const nodemailer = require("nodemailer");
 
 let cachedTransporter = null;
 
+function toBoolean(value) {
+  return String(value).toLowerCase() === "true";
+}
+
 function getTransporter() {
   if (cachedTransporter) return cachedTransporter;
 
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
-  const service = process.env.EMAIL_SERVICE || "gmail";
+  const user = process.env.EMAIL_USER || process.env.EMAIL_USERNAME;
+  const pass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
+  const host = process.env.EMAIL_HOST;
+  const port = Number(process.env.EMAIL_PORT || 587);
+  const secure = process.env.EMAIL_SECURE ? toBoolean(process.env.EMAIL_SECURE) : port === 465;
+  const service = process.env.EMAIL_SERVICE || (!host ? "gmail" : undefined);
 
   if (!user || !pass) {
-    throw new Error("Missing EMAIL_USER / EMAIL_PASS in environment variables.");
+    throw new Error("Missing email credentials. Set EMAIL_USER (or EMAIL_USERNAME) and EMAIL_PASS (or EMAIL_PASSWORD).");
   }
 
-  cachedTransporter = nodemailer.createTransport({
-    service,
-    auth: { user, pass },
-  });
+  const transportConfig = service
+    ? { service, auth: { user, pass } }
+    : {
+        host,
+        port,
+        secure,
+        auth: { user, pass },
+      };
+
+  cachedTransporter = nodemailer.createTransport(transportConfig);
 
   return cachedTransporter;
 }
@@ -25,7 +38,22 @@ async function sendEmail({ to, subject, html }) {
   const transporter = getTransporter();
   const from = process.env.EMAIL_FROM || process.env.EMAIL_USER;
 
-  await transporter.sendMail({ from, to, subject, html });
+  try {
+    return await transporter.sendMail({ from, to, subject, html });
+  } catch (error) {
+    console.error("❌ Nodemailer sendMail failed:", {
+      message: error.message,
+      code: error.code,
+      response: error.response,
+      command: error.command,
+      authUserSet: Boolean(process.env.EMAIL_USER),
+      authPassSet: Boolean(process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD),
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT,
+      service: process.env.EMAIL_SERVICE || (process.env.EMAIL_HOST ? undefined : "gmail"),
+    });
+    throw error;
+  }
 }
 
 function otpEmailHtml({ otp }) {

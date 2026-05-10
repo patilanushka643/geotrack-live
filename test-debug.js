@@ -10,7 +10,7 @@
 const socketio = require("socket.io-client");
 
 // Test configuration
-const SERVER_URL = "http://localhost:3000";
+const SERVER_URL = "https://geotrack-live.onrender.com";
 const TEST_USERS = [
     {
         userId: "user-test-001",

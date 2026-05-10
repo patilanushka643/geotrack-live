@@ -41,7 +41,7 @@ const tabChannel = new BroadcastChannel("geotrack-tabs");
 let isActiveTab = false;
 
 // Socket.io connection
-const socket = io();
+const socket = io("https://geotrack-live.onrender.com");
 
 document.addEventListener("DOMContentLoaded", function () {
     console.log("🚀 Location Sharing System Initialized");

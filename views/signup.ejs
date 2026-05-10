@@ -414,7 +414,13 @@
     </div>
 
     <script>
-        const API_BASE = '/api';
+        const API_BASE = (() => {
+            if (window.location && window.location.origin && window.location.origin !== 'null') {
+                return `${window.location.origin}/api`;
+            }
+
+            return 'https://geotrack-live.onrender.com/api';
+        })();
         let currentEmail = '';
         let otpTimer = null;
         let resendTimer = null;

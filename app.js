@@ -15,11 +15,38 @@ const locationRoutes = require("./routes/locationRoutes");
 const friendRoutes = require("./routes/friendRoutes");
 const { verifyAuth, checkAlreadyLoggedIn } = require("./middleware/authMiddleware");
 
+const allowedOrigins = new Set(
+    [
+        process.env.FRONTEND_URL,
+        process.env.DEPLOYED_URL,
+        process.env.RENDER_EXTERNAL_URL,
+        "https://geotrack-live.onrender.com",
+    ].filter(Boolean)
+);
+
 app.set("view engine", "ejs");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
+
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+
+    if (origin && allowedOrigins.has(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Vary", "Origin");
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+        res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+    }
+
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(204);
+    }
+
+    return next();
+});
 
 // ===== API ROUTES =====
 app.use("/api", authRoutes);
@@ -158,7 +185,12 @@ const port = process.env.PORT || 3000;
   }
 
   server.listen(port, () => {
-    console.log(`🚀 Server running on http://localhost:${port}`);
-    console.log(`📧 Email Service: ${process.env.EMAIL_SERVICE || "gmail"}`);
+        const hostMsg = process.env.RENDER_EXTERNAL_URL || process.env.DEPLOYED_URL || process.env.FRONTEND_URL || "https://geotrack-live.onrender.com";
+    console.log(`🚀 Server running on ${hostMsg}`);
+    console.log(`📧 Email Service: ${process.env.EMAIL_SERVICE || (process.env.EMAIL_HOST ? "smtp" : "gmail")}`);
+        console.log(
+            `📧 Email env loaded: EMAIL_USER=${Boolean(process.env.EMAIL_USER || process.env.EMAIL_USERNAME)}, EMAIL_PASS=${Boolean(process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD)}, EMAIL_HOST=${Boolean(process.env.EMAIL_HOST)}, EMAIL_PORT=${Boolean(process.env.EMAIL_PORT)}, EMAIL_FROM=${Boolean(process.env.EMAIL_FROM)}`
+        );
+        console.log(`🌍 Allowed frontend origins: ${Array.from(allowedOrigins).join(", ")}`);
   });
 })();

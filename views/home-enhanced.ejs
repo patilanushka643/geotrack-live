@@ -692,7 +692,7 @@
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://geotrack-live.onrender.com/socket.io/socket.io.js"></script>
     <script>
         // ===== CONSTANTS & VARIABLES =====
         const FRIENDS_API = '/api/friends';
@@ -735,7 +735,7 @@
 
         // ===== SOCKET.IO SETUP =====
         function initializeSocket() {
-            socket = io();
+            socket = io("https://geotrack-live.onrender.com");
 
             socket.on('user-joined', (data) => {
                 console.log('✅ User joined:', data.username);

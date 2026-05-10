@@ -53,14 +53,37 @@ async function sendOtp(req, res) {
     user.isVerified = false; // require fresh verification on each OTP send
     await user.save();
 
-    // 🔐 DEBUG: Log OTP for testing (remove in production)
-    console.log(`\n🔐 OTP for ${email}: ${otp}\n`);
+    try {
+      // 🔐 DEBUG: Log OTP for testing (remove in production)
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`\n🔐 OTP for ${email}: ${otp}\n`);
+      }
 
-    await sendEmail({
-      to: email,
-      subject: "🔐 GeoTrack OTP Verification",
-      html: otpEmailHtml({ otp }),
-    });
+      await sendEmail({
+        to: email,
+        subject: "🔐 GeoTrack OTP Verification",
+        html: otpEmailHtml({ otp }),
+      });
+    } catch (emailError) {
+      user.otp = null;
+      user.otpExpiry = null;
+      user.otpAttempts = 0;
+      user.otpLastSentAt = null;
+      user.isVerified = false;
+      await user.save();
+
+      console.error("❌ OTP email send failed:", {
+        message: emailError.message,
+        code: emailError.code,
+        response: emailError.response,
+        command: emailError.command,
+      });
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to send OTP email right now. Please check email configuration and try again.",
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -69,7 +92,14 @@ async function sendOtp(req, res) {
       type,
     });
   } catch (error) {
-    console.error("Error in sendOtp:", error);
+    console.log("Full Error Object:", error);
+    console.error("❌ Error in sendOtp:", {
+      message: error.message,
+      code: error.code,
+      response: error.response,
+      command: error.command,
+      stack: error.stack,
+    });
     return res.status(500).json({ success: false, message: "Server error" });
   }
 }
@@ -139,7 +169,13 @@ async function verifyOtp(req, res) {
       token: email, // keeping existing frontend expectation; replace with JWT later if needed
     });
   } catch (error) {
-    console.error("Error in verifyOtp:", error);
+    console.error("❌ Error in verifyOtp:", {
+      message: error.message,
+      code: error.code,
+      response: error.response,
+      command: error.command,
+      stack: error.stack,
+    });
     return res.status(500).json({ success: false, message: "Server error" });
   }
 }
@@ -368,14 +404,37 @@ async function sendPasswordResetOtp(req, res) {
     user.isPasswordResetVerified = false;
     await user.save();
 
-    // 🔐 DEBUG: Log OTP for testing (remove in production)
-    console.log(`\n🔐 Password Reset OTP for ${email}: ${otp}\n`);
+    try {
+      // 🔐 DEBUG: Log OTP for testing (remove in production)
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`\n🔐 Password Reset OTP for ${email}: ${otp}\n`);
+      }
 
-    await sendEmail({
-      to: email,
-      subject: "🔐 GeoTrack Password Reset OTP",
-      html: passwordResetOtpEmailHtml({ otp }),
-    });
+      await sendEmail({
+        to: email,
+        subject: "🔐 GeoTrack Password Reset OTP",
+        html: passwordResetOtpEmailHtml({ otp }),
+      });
+    } catch (emailError) {
+      user.passwordResetOtp = null;
+      user.passwordResetOtpExpiry = null;
+      user.passwordResetOtpAttempts = 0;
+      user.passwordResetOtpLastSentAt = null;
+      user.isPasswordResetVerified = false;
+      await user.save();
+
+      console.error("❌ Password reset OTP email send failed:", {
+        message: emailError.message,
+        code: emailError.code,
+        response: emailError.response,
+        command: emailError.command,
+      });
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to send password reset OTP right now. Please check email configuration and try again.",
+      });
+    }
 
     return res.status(200).json({
       success: true,
