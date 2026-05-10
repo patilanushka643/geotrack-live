@@ -1,59 +1,94 @@
-const nodemailer = require("nodemailer");
+const BREVO_ENDPOINT = "https://api.brevo.com/v3/smtp/email";
 
-let cachedTransporter = null;
+function getBrevoApiKey() {
+  return String(process.env.BREVO_API_KEY || "").trim();
+}
 
-function getTransporter() {
-  if (cachedTransporter) return cachedTransporter;
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
-  const host = process.env.EMAIL_HOST || "smtp.gmail.com";
-  const port = Number(process.env.EMAIL_PORT || 465);
-  const secure = (process.env.EMAIL_SECURE || "true").toString() === "true";
+function getSenderEmail() {
+  return String(process.env.EMAIL_USER || "").trim();
+}
 
-  // If credentials are missing, return a stub transporter whose sendMail
-  // method rejects asynchronously. This prevents synchronous throws so
-  // callers (like `sendEmail` and `sendOtp`) can catch and handle failures
-  // without crashing the process or leaving inconsistent DB state.
-  if (!user || !pass) {
-    cachedTransporter = {
-      sendMail: async () => {
-        const err = new Error("Missing EMAIL_USER or EMAIL_PASS environment variables");
-        err.code = "MISSING_EMAIL_CREDS";
-        throw err;
-      },
-    };
-    return cachedTransporter;
-  }
-
-  const transportConfig = {
-    host,
-    port,
-    secure,
-    auth: { user, pass },
+function createBrevoRequestBody({ to, subject, html }) {
+  return {
+    sender: {
+      email: getSenderEmail(),
+      name: process.env.EMAIL_FROM_NAME || "GeoTrack",
+    },
+    to: [{ email: String(to || "").trim() }],
+    subject,
+    htmlContent: html,
   };
-
-  cachedTransporter = nodemailer.createTransport(transportConfig);
-
-  return cachedTransporter;
 }
 
 async function sendEmail({ to, subject, html }) {
-  const transporter = getTransporter();
-  const from = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+  const apiKey = getBrevoApiKey();
+  const senderEmail = getSenderEmail();
 
   try {
-    return await transporter.sendMail({ from, to, subject, html });
+    if (!apiKey) {
+      const error = new Error("Missing BREVO_API_KEY environment variable");
+      error.code = "MISSING_BREVO_API_KEY";
+      throw error;
+    }
+
+    if (!senderEmail) {
+      const error = new Error("Missing EMAIL_USER environment variable for Brevo sender email");
+      error.code = "MISSING_EMAIL_USER";
+      throw error;
+    }
+
+    if (typeof fetch !== "function") {
+      const error = new Error("Global fetch is not available in this Node.js runtime");
+      error.code = "FETCH_UNAVAILABLE";
+      throw error;
+    }
+
+    const payload = createBrevoRequestBody({ to, subject, html });
+    const response = await fetch(BREVO_ENDPOINT, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "api-key": apiKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text();
+    let parsedResponse = null;
+    if (responseText) {
+      try {
+        parsedResponse = JSON.parse(responseText);
+      } catch {
+        parsedResponse = responseText;
+      }
+    }
+
+    if (!response.ok) {
+      const error = new Error(
+        `Brevo email request failed with status ${response.status}${responseText ? `: ${responseText}` : ""}`
+      );
+      error.code = "BREVO_API_ERROR";
+      error.status = response.status;
+      error.response = parsedResponse;
+      throw error;
+    }
+
+    return {
+      ok: true,
+      status: response.status,
+      response: parsedResponse,
+      provider: "brevo",
+    };
   } catch (error) {
-    console.error("❌ Nodemailer sendMail failed:", {
+    console.error("❌ Brevo sendEmail failed:", {
       message: error.message,
       code: error.code,
       response: error.response,
       command: error.command,
-      authUserSet: Boolean(process.env.EMAIL_USER),
-      authPassSet: Boolean(process.env.EMAIL_PASS),
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
+      apiKeySet: Boolean(process.env.BREVO_API_KEY),
+      senderEmailSet: Boolean(process.env.EMAIL_USER),
+      endpoint: BREVO_ENDPOINT,
     });
     throw error;
   }
