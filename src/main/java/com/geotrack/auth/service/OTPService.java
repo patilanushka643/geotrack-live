@@ -3,6 +3,7 @@ package com.geotrack.auth.service;
 import com.geotrack.auth.model.OTPData;
 import org.springframework.stereotype.Service;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -34,7 +35,9 @@ public class OTPService {
      */
     public String generateOTP() {
         SecureRandom random = new SecureRandom();
-        int otp = 100000 + random.nextInt(900000); // 6-digit OTP
+        int min = (int) Math.pow(10, OTP_LENGTH - 1);
+        int maxExclusive = (int) Math.pow(10, OTP_LENGTH);
+        int otp = min + random.nextInt(maxExclusive - min);
         return String.valueOf(otp);
     }
 
@@ -48,7 +51,7 @@ public class OTPService {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(otp.getBytes());
             return Base64.getEncoder().encodeToString(hash);
-        } catch (Exception e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Error hashing OTP", e);
         }
     }

@@ -79,7 +79,6 @@ public class AuthController {
 
         } catch (Exception e) {
             System.err.println("Error in send-otp: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>(false, "❌ Server error: " + e.getMessage()));
         }
@@ -116,7 +115,6 @@ public class AuthController {
 
         } catch (Exception e) {
             System.err.println("Error in verify-otp: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>(false, "❌ Server error: " + e.getMessage()));
         }
@@ -154,7 +152,6 @@ public class AuthController {
 
         } catch (Exception e) {
             System.err.println("Error in register: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>(false, "❌ Server error: " + e.getMessage()));
         }

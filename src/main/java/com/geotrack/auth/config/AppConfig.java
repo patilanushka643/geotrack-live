@@ -1,6 +1,5 @@
 package com.geotrack.auth.config;
 
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 import com.geotrack.auth.service.OTPService;
