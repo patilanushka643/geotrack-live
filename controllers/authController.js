@@ -54,14 +54,9 @@ async function sendOtp(req, res) {
     await user.save();
 
     try {
-      // 🔐 DEBUG: Log OTP for testing (remove in production)
-      if (process.env.NODE_ENV !== "production") {
-        console.log(`\n🔐 OTP for ${email}: ${otp}\n`);
-      }
-
       await sendEmail({
         to: email,
-        subject: "🔐 GeoTrack OTP Verification",
+        subject: "GeoTrack Email Verification OTP",
         html: otpEmailHtml({ otp }),
       });
     } catch (emailError) {
@@ -405,14 +400,9 @@ async function sendPasswordResetOtp(req, res) {
     await user.save();
 
     try {
-      // 🔐 DEBUG: Log OTP for testing (remove in production)
-      if (process.env.NODE_ENV !== "production") {
-        console.log(`\n🔐 Password Reset OTP for ${email}: ${otp}\n`);
-      }
-
       await sendEmail({
         to: email,
-        subject: "🔐 GeoTrack Password Reset OTP",
+        subject: "GeoTrack Password Reset OTP",
         html: passwordResetOtpEmailHtml({ otp }),
       });
     } catch (emailError) {

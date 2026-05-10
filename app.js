@@ -187,9 +187,9 @@ const port = process.env.PORT || 3000;
   server.listen(port, () => {
         const hostMsg = process.env.RENDER_EXTERNAL_URL || process.env.DEPLOYED_URL || process.env.FRONTEND_URL || "https://geotrack-live.onrender.com";
     console.log(`🚀 Server running on ${hostMsg}`);
-    console.log(`📧 Email Service: ${process.env.EMAIL_SERVICE || (process.env.EMAIL_HOST ? "smtp" : "gmail")}`);
+    console.log(`📧 Email SMTP: smtp.gmail.com:465 (secure)`);
         console.log(
-            `📧 Email env loaded: EMAIL_USER=${Boolean(process.env.EMAIL_USER || process.env.EMAIL_USERNAME)}, EMAIL_PASS=${Boolean(process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD)}, EMAIL_HOST=${Boolean(process.env.EMAIL_HOST)}, EMAIL_PORT=${Boolean(process.env.EMAIL_PORT)}, EMAIL_FROM=${Boolean(process.env.EMAIL_FROM)}`
+            `📧 Email env loaded: EMAIL_USER=${Boolean(process.env.EMAIL_USER)}, EMAIL_PASS=${Boolean(process.env.EMAIL_PASS)}, EMAIL_FROM=${Boolean(process.env.EMAIL_FROM)}`
         );
         console.log(`🌍 Allowed frontend origins: ${Array.from(allowedOrigins).join(", ")}`);
   });
