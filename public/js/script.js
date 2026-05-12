@@ -725,38 +725,35 @@ function addOrUpdateUserMarker(user) {
 }
 
 /**
- * Create custom icon for markers
+ * Create custom icon for markers using Leaflet custom icons
+ * Updated to use custom SVG marker images for a modern look
  */
 function createCustomIcon(type, name) {
-    const getColor = (type) => {
-        if (type === "self") return "#2563eb"; // Blue for self
-        if (type === "user") return "#dc2626"; // Red for other users
-        return "#6b7280"; // Grey fallback
-    };
+    let iconUrl = "/images/location-pin-blue.svg"; // Default to blue
+    let iconSize = [40, 50]; // SVG size
+    let iconAnchor = [20, 50]; // Anchor at bottom of pin
+    let popupAnchor = [0, -50]; // Popup appears above the pin
 
-    const iconHtml = `
-        <div style="
-            background-color: ${getColor(type)};
-            border: 3px solid white;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        ">
-            ${type === "self" ? "📍" : "👤"}
-        </div>
-    `;
+    // Determine which icon to use based on type
+    if (type === "self") {
+        // Green marker for current user
+        iconUrl = "/images/location-pin-green.svg";
+    } else if (type === "user") {
+        // Red marker for other users
+        iconUrl = "/images/location-pin-red.svg";
+    } else {
+        // Blue as default fallback
+        iconUrl = "/images/location-pin-blue.svg";
+    }
 
-    return L.divIcon({
-        html: iconHtml,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-        popupAnchor: [0, -15],
+    // Create Leaflet icon using the SVG image
+    return L.icon({
+        iconUrl: iconUrl,
+        iconSize: iconSize,
+        iconAnchor: iconAnchor,
+        popupAnchor: popupAnchor,
+        shadowUrl: null, // No shadow - handled in SVG
+        shadowSize: null,
     });
 }
 
@@ -1622,5 +1619,128 @@ function setupInviteFriendsListeners() {
 document.addEventListener("DOMContentLoaded", function() {
     console.log("👥 Invite friends system initialized");
     setupInviteFriendsListeners();
+}, { once: true });
+
+/**
+ * ===== RESPONSIVE HAMBURGER MENU SYSTEM =====
+ * Handles mobile sidebar toggle with smooth animations and overlay
+ */
+
+let mobileMenuOpen = false;
+
+/**
+ * Initialize hamburger menu functionality
+ */
+function initializeHamburgerMenu() {
+    const hamburgerBtn = document.getElementById("hamburgerMenuBtn");
+    const sidebar = document.querySelector(".sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+
+    if (!hamburgerBtn || !sidebar) {
+        console.warn("⚠️ Hamburger menu elements not found");
+        return;
+    }
+
+    // Toggle sidebar on hamburger button click
+    hamburgerBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        toggleMobileMenu();
+    });
+
+    // Close sidebar when clicking overlay
+    if (overlay) {
+        overlay.addEventListener("click", function() {
+            closeMobileMenu();
+        });
+    }
+
+    // Close sidebar when clicking menu items
+    const menuItems = sidebar.querySelectorAll("button, a, input[type='checkbox']");
+    menuItems.forEach(item => {
+        item.addEventListener("click", function(e) {
+            // Don't close if clicking the location sharing toggle
+            if (item.id === "location-sharing-toggle-ui" || item.id === "location-sharing-toggle") {
+                return;
+            }
+            // Close the menu after selecting an item (except for toggles and buttons that need to stay open)
+            if (!item.classList.contains("toggle-switch")) {
+                closeMobileMenu();
+            }
+        });
+    });
+
+    // Handle Escape key to close menu
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" && mobileMenuOpen) {
+            closeMobileMenu();
+        }
+    });
+
+    // Prevent sidebar from closing when scrolling within it
+    sidebar.addEventListener("click", function(e) {
+        e.stopPropagation();
+    });
+
+    // Handle window resize to close menu on desktop view
+    window.addEventListener("resize", function() {
+        if (window.innerWidth > 768 && mobileMenuOpen) {
+            closeMobileMenu();
+        }
+    });
+
+    console.log("✅ Hamburger menu initialized");
+}
+
+/**
+ * Toggle mobile menu open/close
+ */
+function toggleMobileMenu() {
+    if (mobileMenuOpen) {
+        closeMobileMenu();
+    } else {
+        openMobileMenu();
+    }
+}
+
+/**
+ * Open mobile menu with animation
+ */
+function openMobileMenu() {
+    const hamburgerBtn = document.getElementById("hamburgerMenuBtn");
+    const sidebar = document.querySelector(".sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+
+    if (sidebar && overlay) {
+        sidebar.classList.add("mobile-open");
+        overlay.classList.add("show");
+        hamburgerBtn.classList.add("open");
+        mobileMenuOpen = true;
+        document.body.style.overflow = "hidden"; // Prevent body scroll
+        console.log("📖 Mobile menu opened");
+    }
+}
+
+/**
+ * Close mobile menu with animation
+ */
+function closeMobileMenu() {
+    const hamburgerBtn = document.getElementById("hamburgerMenuBtn");
+    const sidebar = document.querySelector(".sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+
+    if (sidebar && overlay) {
+        sidebar.classList.remove("mobile-open");
+        overlay.classList.remove("show");
+        hamburgerBtn.classList.remove("open");
+        mobileMenuOpen = false;
+        document.body.style.overflow = "auto"; // Re-enable body scroll
+        console.log("📖 Mobile menu closed");
+    }
+}
+
+// Initialize hamburger menu when DOM is ready
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("🍔 Initializing responsive hamburger menu...");
+    setTimeout(initializeHamburgerMenu, 100);
 }, { once: true });
 

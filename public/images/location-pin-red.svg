@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 50" width="40" height="50">
+  <!-- Outer shadow/glow -->
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+    <linearGradient id="pinGradientRed" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#dc2626;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#b91c1c;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main pin body with red color -->
+  <path d="M 20 2 C 11.71 2 5 8.71 5 17 C 5 27 20 48 20 48 C 20 48 35 27 35 17 C 35 8.71 28.29 2 20 2 Z" 
+        fill="url(#pinGradientRed)" 
+        filter="url(#shadow)" 
+        stroke="white" 
+        stroke-width="1.5"/>
+  
+  <!-- Inner circle -->
+  <circle cx="20" cy="17" r="6" fill="white" opacity="0.9"/>
+  
+  <!-- Dot center -->
+  <circle cx="20" cy="17" r="3" fill="#dc2626"/>
+</svg>
