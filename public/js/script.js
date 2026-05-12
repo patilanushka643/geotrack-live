@@ -41,7 +41,10 @@ const tabChannel = new BroadcastChannel("geotrack-tabs");
 let isActiveTab = false;
 
 // Socket.io connection
-const socket = io("https://geotrack-live.onrender.com");
+const socket = io({
+    withCredentials: true,
+    transports: ["websocket", "polling"],
+});
 
 document.addEventListener("DOMContentLoaded", function () {
     console.log("🚀 Location Sharing System Initialized");
@@ -449,6 +452,13 @@ function initializeMap() {
         maxZoom: 19,
     }).addTo(map);
 
+    // Keep Leaflet aligned with responsive layout changes.
+    window.addEventListener("resize", () => {
+        if (map) {
+            map.invalidateSize({ animate: false });
+        }
+    });
+
     window.geotrackMap = map;
     window.geotrackUserMarkers = userMarkers;
 
@@ -630,17 +640,42 @@ function updateOwnMarker(latitude, longitude) {
  * Load all users from database (both online and offline)
  */
 function loadAllActiveUsers() {
-    fetch("/api/location/all-users")
+    fetch("/api/location/active")
         .then((res) => res.json())
         .then((data) => {
-            if (data.success && data.users) {
-                console.log(`👥 Loaded ${data.count} users (online and offline)`);
-                data.users.forEach((user) => {
-                    if (user.isOnline && user.latitude && user.longitude) {
+            const apiUsers = Array.isArray(data.users) ? data.users : Array.isArray(data.data) ? data.data : [];
+
+            if (data.success && apiUsers) {
+                const activeUsers = apiUsers
+                    .map((user) => ({
+                        id: user.id || user._id,
+                        fullName: user.fullName || user.username || "Unknown user",
+                        username: user.username || user.userId || user.id,
+                        latitude: Number(user.latitude),
+                        longitude: Number(user.longitude),
+                        locationLastUpdated: user.locationLastUpdated,
+                        isOnline: user.isOnline !== false,
+                        isLocationSharing: user.isLocationSharing !== false,
+                    }))
+                    .filter((user) => user.id && Number.isFinite(user.latitude) && Number.isFinite(user.longitude));
+
+                console.log(`👥 Loaded ${activeUsers.length} active users`);
+
+                // Remove stale markers so disconnected/offline users disappear cleanly.
+                Object.keys(userMarkers).forEach((markerId) => {
+                    if (markerId !== "self" && !activeUsers.some((user) => String(user.id) === String(markerId))) {
+                        map.removeLayer(userMarkers[markerId]);
+                        delete userMarkers[markerId];
+                    }
+                });
+
+                activeUsers.forEach((user) => {
+                    if (user.isLocationSharing && user.isOnline) {
                         addOrUpdateUserMarker(user);
                     }
                 });
-                updateUsersList(data.users);
+
+                updateUsersList(activeUsers);
             }
         })
         .catch((error) => {
@@ -658,10 +693,16 @@ function loadAllActiveUsers() {
 function addOrUpdateUserMarker(user) {
     if (!map) return;
 
-    const markerId = user.id;
+    const markerId = String(user.id);
+    const safeLatitude = Number(user.latitude);
+    const safeLongitude = Number(user.longitude);
+
+    if (!Number.isFinite(safeLatitude) || !Number.isFinite(safeLongitude)) {
+        return;
+    }
 
     if (!userMarkers[markerId]) {
-        const marker = L.marker([user.latitude, user.longitude], {
+        const marker = L.marker([safeLatitude, safeLongitude], {
             icon: createCustomIcon("user", user.fullName),
         }).addTo(map);
 
@@ -670,7 +711,7 @@ function addOrUpdateUserMarker(user) {
             <div class="marker-popup">
                 <h3>📍 ${user.fullName}</h3>
                 <p><strong>Username:</strong> ${user.username}</p>
-                <p><strong>Coordinates:</strong> ${user.latitude.toFixed(4)}, ${user.longitude.toFixed(4)}</p>
+                <p><strong>Coordinates:</strong> ${safeLatitude.toFixed(4)}, ${safeLongitude.toFixed(4)}</p>
                 <p><strong>Status:</strong> ${statusBadge}</p>
                 <p><strong>Last Updated:</strong> ${new Date(user.locationLastUpdated).toLocaleTimeString()}</p>
             </div>
@@ -679,7 +720,7 @@ function addOrUpdateUserMarker(user) {
         userMarkers[markerId] = marker;
     } else {
         // Update existing marker position
-        userMarkers[markerId].setLatLng([user.latitude, user.longitude]);
+        userMarkers[markerId].setLatLng([safeLatitude, safeLongitude]);
     }
 }
 
@@ -745,6 +786,7 @@ function updateUsersList(users) {
 
     // Add each user to the list
     users.forEach((user) => {
+        const displayName = user.fullName || user.username || "Unknown user";
         const isOnline = user.isOnline;
         const statusClass = isOnline ? "online" : "offline";
         const statusText = isOnline ? "Online" : "Offline";
@@ -755,8 +797,8 @@ function updateUsersList(users) {
         userElement.id = `user-item-${user.id}`;
         userElement.innerHTML = `
             <div class="friend-info">
-                <div class="friend-avatar">${user.fullName.charAt(0).toUpperCase()}</div>
-                <div class="friend-name" title="${user.fullName}">${user.fullName}</div>
+                <div class="friend-avatar">${displayName.charAt(0).toUpperCase()}</div>
+                <div class="friend-name" title="${displayName}">${displayName}</div>
             </div>
             <div class="friend-meta">
                 <span class="status-badge ${statusClass}">${statusText}</span>
@@ -781,7 +823,7 @@ function updateUsersCountHeader(count) {
     const header = document.getElementById("usersCountHeader");
     if (header) {
         const onlineCount = Object.values(usersDatabase).filter(u => u.isOnline).length;
-        header.textContent = `All Users (${count}) • ${onlineCount} Online`;
+        header.textContent = `Active Users (${count}) • ${onlineCount} Online`;
     }
     
     const onlineCountBadge = document.getElementById("onlineCount");
@@ -811,13 +853,14 @@ function updateUserStatusInList(userId, isOnline, fullName) {
  * Select a user and show their location on the map
  */
 function selectUserAndShowLocation(user) {
-    if (user.latitude && user.longitude) {
+    if (Number.isFinite(Number(user.latitude)) && Number.isFinite(Number(user.longitude))) {
         // Center map on user location
-        map.setView([user.latitude, user.longitude], 15);
+        map.setView([Number(user.latitude), Number(user.longitude)], 15);
         
         // Open marker popup if it exists
-        if (userMarkers[user.id]) {
-            userMarkers[user.id].openPopup();
+        const markerId = String(user.id);
+        if (userMarkers[markerId]) {
+            userMarkers[markerId].openPopup();
         }
         
         // Highlight the selected user in the list
@@ -876,12 +919,13 @@ function initializeSocketListeners() {
 
         addOrUpdateUserMarker({
             id: data.userId,
-            fullName: data.fullName,
-            username: data.username,
+            fullName: data.fullName || data.username || "Unknown user",
+            username: data.username || data.fullName || "Unknown user",
             latitude: data.latitude,
             longitude: data.longitude,
             isOnline: true,
             locationLastUpdated: data.timestamp,
+            isLocationSharing: true,
         });
 
         // Update in local database and list

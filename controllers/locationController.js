@@ -2,6 +2,21 @@ const User = require("../models/User");
 const LocationHistory = require("../models/LocationHistory");
 const Friendship = require("../models/Friendship");
 
+const formatLocationUser = (user) => ({
+    id: user._id,
+    fullName: user.fullName,
+    username: user.userId,
+    email: user.email,
+    latitude: user.latitude,
+    longitude: user.longitude,
+    locationLastUpdated: user.locationLastUpdated,
+    isLocationSharing: Boolean(user.isLocationSharing),
+    isOnline: Boolean(
+        user.locationLastUpdated &&
+        Date.now() - new Date(user.locationLastUpdated).getTime() < 60000
+    ),
+});
+
 // 1. UPDATE LOCATION (With History and Validation)
 const updateLocation = async (req, res) => {
     try {
@@ -61,15 +76,7 @@ const getUsersList = async (req, res) => {
             { _id: 1, email: 1, fullName: 1, userId: 1, latitude: 1, longitude: 1, locationLastUpdated: 1, isLocationSharing: 1 }
         ).sort({ fullName: 1 });
 
-        const formattedUsers = users.map((user) => ({
-            id: user._id,
-            fullName: user.fullName,
-            username: user.userId,
-            email: user.email,
-            latitude: user.latitude,
-            longitude: user.longitude,
-            isOnline: user.locationLastUpdated && (Date.now() - new Date(user.locationLastUpdated).getTime()) < 60000,
-        }));
+        const formattedUsers = users.map(formatLocationUser);
 
         res.json({ success: true, users: formattedUsers });
     } catch (error) {
@@ -123,8 +130,15 @@ const toggleLocationSharing = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({});
-        return res.json({ success: true, data: users });
+        const users = await User.find({ isVerified: true })
+            .select("_id email fullName userId latitude longitude locationLastUpdated isLocationSharing")
+            .sort({ fullName: 1 });
+
+        return res.json({
+            success: true,
+            users: users.map(formatLocationUser),
+            count: users.length,
+        });
     } catch (err) {
         console.error("getAllUsers error:", err.message);
         return res.status(500).json({ success: false, error: err.message });
@@ -133,9 +147,21 @@ const getAllUsers = async (req, res) => {
 
 const getAllActiveLocations = async (req, res) => {
     try {
-        // Return users who have location sharing enabled
-        const activeUsers = await User.find({ isLocationSharing: true }).select("_id fullName userId latitude longitude locationLastUpdated");
-        return res.json({ success: true, data: activeUsers });
+        // Only users who opted into sharing should appear on the live map.
+        const activeUsers = await User.find({
+            isVerified: true,
+            isLocationSharing: true,
+            latitude: { $ne: null },
+            longitude: { $ne: null },
+        })
+            .select("_id email fullName userId latitude longitude locationLastUpdated isLocationSharing")
+            .sort({ locationLastUpdated: -1 });
+
+        return res.json({
+            success: true,
+            users: activeUsers.map(formatLocationUser),
+            count: activeUsers.length,
+        });
     } catch (err) {
         console.error("getAllActiveLocations error:", err.message);
         return res.status(500).json({ success: false, error: err.message });

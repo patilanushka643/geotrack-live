@@ -103,6 +103,9 @@ io.on("connection", function (socket) {
 
     // User joins with their ID
     socket.on("user-join", function (data) {
+        socket.data.userId = data.userId;
+        socket.data.fullName = data.fullName || data.username || "Unknown user";
+        socket.data.roomId = data.roomId || null;
         connectedUsers[data.userId] = socket.id;
         console.log(`📍 User ${data.userId} joined location sharing`);
         
@@ -110,6 +113,9 @@ io.on("connection", function (socket) {
         io.emit("user-joined", {
             userId: data.userId,
             username: data.username,
+            fullName: data.fullName || data.username,
+            email: data.email || null,
+            roomId: data.roomId || null,
             timestamp: new Date(),
         });
     });
@@ -122,9 +128,11 @@ io.on("connection", function (socket) {
         io.emit("receive-location", {
             userId: data.userId,
             username: data.username,
+            fullName: data.fullName || data.username,
             latitude: data.latitude,
             longitude: data.longitude,
             accuracy: data.accuracy,
+            roomId: data.roomId || null,
             timestamp: new Date(),
         });
     });
@@ -142,15 +150,28 @@ io.on("connection", function (socket) {
 
     // Handle disconnect
     socket.on("disconnect", function () {
-        // Find and remove user from connectedUsers
-        for (let userId in connectedUsers) {
-            if (connectedUsers[userId] === socket.id) {
-                console.log(`🚪 User ${userId} disconnected`);
+        const userId = socket.data.userId;
+
+        if (userId && connectedUsers[userId] === socket.id) {
+            console.log(`🚪 User ${userId} disconnected`);
+            io.emit("user-disconnected", {
+                userId,
+                fullName: socket.data.fullName,
+                timestamp: new Date(),
+            });
+            delete connectedUsers[userId];
+            return;
+        }
+
+        // Fallback for sockets that connected before user metadata was attached.
+        for (let candidateUserId in connectedUsers) {
+            if (connectedUsers[candidateUserId] === socket.id) {
+                console.log(`🚪 User ${candidateUserId} disconnected`);
                 io.emit("user-disconnected", {
-                    userId,
+                    userId: candidateUserId,
                     timestamp: new Date(),
                 });
-                delete connectedUsers[userId];
+                delete connectedUsers[candidateUserId];
                 break;
             }
         }
